@@ -1,0 +1,5 @@
+dist
+node_modules
+*lock.json
+example_from_noble
+.DS_Store

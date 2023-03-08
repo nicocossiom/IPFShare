@@ -4,8 +4,8 @@
   "description": "",
   "main": "/dist/main.js",
   "scripts": {
-    "node-start-discoverer": "tsc && node dist/discoverer.js",
-    "node-start-advertiser": "tsc && node dist/advertiser.js", 
+    "start-discoverer": "tsc && node dist/discoverer.js",
+    "start-advertiser": "tsc && node dist/advertiser.js",
     "bun-start-discoverer": "tsc && bun dist/discoverer.js",
     "bun-start-advertiser": "tsc && bun dist/advertiser.js"
   },
