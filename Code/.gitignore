@@ -1,56 +1,58 @@
+node_modules
+.DS_Store
+dist
+*.local
+thumbs.db
 
-.env
-.gclient_done
-**/.npmrc
-.tags*
-.vs/
-.vscode/
-*.log
-*.pyc
-*.sln
-*.swp
-*.VC.db
-*.VC.VC.opendb
-*.vcxproj
-*.vcxproj.filters
-*.vcxproj.user
-*.xcodeproj
-/.idea/
-**/dist/
-**/node_modules/
-SHASUMS256.txt
-**/package-lock.json
-compile_commands.json
-.envrc
+.eslintcache
+.browserslistrc
+.electron-vendors.cache.json
 
-# npm package
-/npm/dist
-/npm/path.txt
-/npm/checksums.json
+# Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm, CLion, Android Studio, WebStorm and Rider
+# Reference: https://intellij-support.jetbrains.com/hc/en-us/articles/206544839
 
-.npmrc
+# User-specific stuff
+.idea/**/workspace.xml
+.idea/**/tasks.xml
+.idea/**/usage.statistics.xml
+.idea/**/dictionaries
+.idea/**/shelf
 
-# Generated API definitions
-electron-api.json
-electron.d.ts
+# Generated files
+.idea/**/contentModel.xml
 
-# Spec hash calculation
-spec/.hash
+# Sensitive or high-churn files
+.idea/**/dataSources/
+.idea/**/dataSources.ids
+.idea/**/dataSources.local.xml
+.idea/**/sqlDataSources.xml
+.idea/**/dynamic.xml
+.idea/**/uiDesigner.xml
+.idea/**/dbnavigator.xml
 
-# Eslint Cache
-.eslintcache*
+# Gradle
+.idea/**/gradle.xml
+.idea/**/libraries
 
-# Generated native addon files
-/spec/fixtures/native-addon/echo/build/
+# Gradle and Maven with auto-import
+# When using Gradle or Maven with auto-import, you should exclude module files,
+# since they will be recreated, and may cause churn.  Uncomment if using
+# auto-import.
+ .idea/artifacts
+ .idea/compiler.xml
+ .idea/jarRepositories.xml
+ .idea/modules.xml
+ .idea/*.iml
+ .idea/modules
+ *.iml
+ *.ipr
 
-# If someone runs tsc this is where stuff will end up
-ts-gen
+# Mongo Explorer plugin
+.idea/**/mongoSettings.xml
 
-# Used to accelerate CI builds
-.depshash
-.depshash-target
+# File-based project format
+*.iws
 
-# Used to accelerate builds after sync
-patches/mtime-cache.json
-
-spec/fixtures/logo.png
+# Editor-based Rest Client
+.idea/httpRequests
+/.idea/csv-plugin.xml

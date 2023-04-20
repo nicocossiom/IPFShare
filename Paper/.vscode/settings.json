@@ -1,0 +1,72 @@
+{
+    "latex-workshop.latex.recipe.default": "latexmk",
+    "latex-workshop.latex.autoBuild.run": "onSave",
+    "latex-workshop.latex.autoClean.run": "onBuilt",
+    "latex-workshop.latex.outDir": "%DIR%/build",
+    "latex-workshop.latex.search.rootFiles.exclude": [
+        "include/*.tex",
+        "seccciones/*.tex"
+    ],
+    // "latex-workshop.latex.build.forceRecipeUsage": false,
+    // "latex-workshop.latex.external.build.command": "latexmk -synctex=1, -interaction=nonstopmode --silent -file-line-error -pdf -bibtex NCM-TFG.tex && rm NCM-TFG.aux NCM-TFG.bbl NCM-TFG.blg NCM-TFG.fdb_latexmk NCM-TFG.fls NCM-TFG.lof  NCM-TFG.log NCM-TFG.lot NCM-TFG.out NCM-TFG.toc",
+    "latex-workshop.latex.recipes": [
+        {
+            "name": "pdfLaTeX",
+            "tools": [
+                "pdflatex"
+            ]
+        },
+        {
+            "name": "latexmk",
+            "tools": [
+                "latexmk"
+            ]
+        },
+        {
+            "name": "pdflatex ➞ bibtex ➞ pdflatex`×2",
+            "tools": [
+                "pdflatex",
+                "bibtex",
+                "pdflatex",
+                "pdflatex"
+            ]
+        },
+    ],
+    "latex-workshop.latex.tools": [
+        {
+            "name": "latexmk",
+            "command": "latexmk",
+            "args": [
+                "-synctex=1",
+                "-interaction=nonstopmode",
+                "-file-line-error",
+                "-recorder",
+                "-pdf",
+                "-f",
+                "-bibtex",
+                "-outdir=%OUTDIR%",
+            ],
+            "env": {}
+        },
+        {
+            "name": "pdflatex",
+            "command": "pdflatex",
+            "args": [
+                "-synctex=1",
+                "-interaction=nonstopmode",
+                "-file-line-error",
+                "-recorcder",
+                "NCM-TFG.tex"
+            ],
+            "env": {}
+        },
+        {
+            "name": "bibtex",
+            "command": "bibtex",
+            "args": [
+                "%DOCFILE%"
+            ],
+            "env": {}
+        },
+    ],
+}
