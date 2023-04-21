@@ -1,0 +1,43 @@
+{
+  "name": "ipfshare",
+  "version": "1.0",
+  "main": "dist-electron/main/index.js",
+  "description": "IPFShare",
+  "author": "Nicolas Cossio",
+  "license": "MIT",
+  "private": true,
+  "debug": {
+    "env": {
+      "VITE_DEV_SERVER_URL": "http://127.0.0.1:7777/"
+    }
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build && electron-builder",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "electron-updater": "^5.3.0",
+    "ipfs": "^0.66.0",
+    "ipfs-http-client": "^60.0.0",
+    "ipfsd-ctl": "^13.0.0",
+    "go-ipfs": "^0.19.0",
+    "kubo-rpc-client": "^3.0.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.0.28",
+    "@types/react-dom": "^18.0.11",
+    "@vitejs/plugin-react": "^3.1.0",
+    "electron": "^23.2.0",
+    "electron-builder": "^23.6.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "typescript": "^5.0.2",
+    "vite": "^4.1.4",
+    "vite-plugin-electron": "^0.11.2",
+    "vite-plugin-electron-renderer": "^0.14.1"
+  },
+  "engines": {
+    "node": "^14.18.0 || >=16.0.0"
+  }
+}
