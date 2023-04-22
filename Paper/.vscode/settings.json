@@ -1,7 +1,7 @@
 {
     "latex-workshop.latex.recipe.default": "latexmk",
     "latex-workshop.latex.autoBuild.run": "onSave",
-    "latex-workshop.latex.autoClean.run": "onBuilt",
+    "latex-workshop.latex.autoClean.run": "onSucceeded",
     "latex-workshop.latex.outDir": "%DIR%/build",
     "latex-workshop.latex.search.rootFiles.exclude": [
         "include/*.tex",
