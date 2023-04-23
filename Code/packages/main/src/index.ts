@@ -1,7 +1,5 @@
 import { app } from 'electron';
-import type { Controller, ControllerType } from 'ipfsd-ctl';
 import { platform } from 'node:process';
-import { getFactory } from './ipfs_utils/ipfs_utils';
 import './security-restrictions';
 import { restoreOrCreateWindow } from '/@/mainWindow';
 
@@ -40,20 +38,7 @@ app.on('activate', restoreOrCreateWindow);
 app
   .whenReady()
   .then(restoreOrCreateWindow)
-  .catch(e => console.error('Failed create window:', e))
-  .finally(
-    async () => {
-      const factory = await getFactory();
-      const nodes: Controller<ControllerType>[] = [];
-      const node = await factory.spawn({type: 'go'});
-      nodes.push(node);
-      console.log('IPFS node1 started');
-      console.log(await node.pid());
-      const node2 = await factory.spawn({ type: 'go' });
-      nodes.push(node2);
-      console.log('IPFS node1 started');
-      console.log(await node.pid());
-    });
+  .catch(e => console.error('Failed create window:', e));
 /**
  * Install Vue.js or any other extension in development mode only.
  * Note: You must install `electron-devtools-installer` manually

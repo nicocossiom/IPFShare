@@ -55,7 +55,7 @@ Vite provides many useful features, such as: `TypeScript`, `TSX/JSX`, `CSS/JSON 
 - Code formatting rules follow the latest TypeScript recommendations and best practices thanks
   to [@typescript-eslint/eslint-plugin](https://www.npmjs.com/package/@typescript-eslint/eslint-plugin).
 
-> [Guide to disable typescript and remove dependencies](https://github.com/cawa-93/vite-electron-builder/discussions/339) 
+> [Guide to disable typescript and remove dependencies](https://github.com/cawa-93/vite-electron-builder/discussions/339)
 
 ### Vue [![Vue version](https://img.shields.io/github/package-json/dependency-version/cawa-93/vite-electron-builder/dev/vue?label=%20&)][vue] (optional)
 
@@ -77,10 +77,9 @@ Vite provides many useful features, such as: `TypeScript`, `TSX/JSX`, `CSS/JSON 
 
 ![Workflow graph](https://user-images.githubusercontent.com/1662812/213429323-ef4bcc87-c273-4f2f-b77f-c04cf6dbc36d.png)
 
-
 ### Publishing
 
-- Each time you push changes to the `main` branch, the [`release`](.github/workflows/release.yml) workflow starts, which creates a new draft release. For each next commit will be created and replaced artifacts. That way you will always have draft with latest artifacts, and the release can be published once it is ready. 
+- Each time you push changes to the `main` branch, the [`release`](.github/workflows/release.yml) workflow starts, which creates a new draft release. For each next commit will be created and replaced artifacts. That way you will always have draft with latest artifacts, and the release can be published once it is ready.
   - Code signing supported. See [`release` workflow](.github/workflows/release.yml).
   - **Auto-update is supported**. After the release is published, all client applications will download the new version
   and install updates silently.
@@ -110,6 +109,7 @@ The structure of this template is very similar to a monorepo. The entire source 
   as: logging, reporting statistics and health status among others.
 
 Schematically, the structure of the application and the method of communication between packages can be depicted as follows:
+
 ```mermaid
 flowchart TB;
 
@@ -137,6 +137,7 @@ subgraph Window["Browser Window"]
 
 packages/renderer -- Call Exposed API --> P
 ```
+
 ### Build web resources
 
 The `main` and `preload` packages are built in [library mode](https://vitejs.dev/guide/build.html#library-mode) as it is
@@ -169,6 +170,7 @@ All dependencies that require Node.js api can be used in
 the [`preload` script](https://www.electronjs.org/docs/latest/tutorial/process-model#preload-scripts).
 
 #### Expose in main world
+
 Here is an example. Let's say you need to read some data from the file system or database in the renderer.
 
 In the preload context, create a function that reads and returns data. To make the function announced in the preload
@@ -255,7 +257,7 @@ When running the build script, the environment variables are loaded from the fol
 .env.[mode].local   # only loaded in specified env mode, ignored by git
 ```
 
-> **Warning**: 
+> **Warning**:
 > To prevent accidentally leaking env variables to the client, only variables prefixed with `VITE_` are exposed to your
 Vite-processed code.
 
@@ -275,7 +277,6 @@ You can change that prefix or add another. See [`envPrefix`](https://vitejs.dev/
 
 See [Contributing Guide](contributing.md).
 
-
 [vite]: https://github.com/vitejs/vite/
 
 [electron]: https://github.com/electron/electron
@@ -284,18 +285,109 @@ See [Contributing Guide](contributing.md).
 
 [vue]: https://github.com/vuejs/vue-next
 
-[vue-router]: https://github.com/vuejs/vue-router-next/
-
 [typescript]: https://github.com/microsoft/TypeScript/
 
 [playwright]: https://playwright.dev
 
 [vitest]: https://vitest.dev
 
-[vue-tsc]: https://github.com/johnsoncodehk/vue-tsc
-
 [eslint-plugin-vue]: https://github.com/vuejs/eslint-plugin-vue
 
-[cawa-93-github]: https://github.com/cawa-93/
+```
+Code
+├─ .editorconfig
+├─ .electron-builder.config.js
+├─ .eslintrc.json
+├─ .gitattributes
+├─ .github
+│  ├─ FUNDING.yml
+│  ├─ ISSUE_TEMPLATE
+│  │  ├─ bug_report.md
+│  │  ├─ config.yml
+│  │  └─ feature_request.md
+│  ├─ renovate.json
+│  └─ workflows
+│     ├─ ci.yml
+│     ├─ lint.yml
+│     ├─ release.yml
+│     ├─ tests.yml
+│     └─ typechecking.yml
+├─ .gitignore
+├─ .idea
+│  ├─ codeStyles
+│  │  ├─ Project.xml
+│  │  └─ codeStyleConfig.xml
+│  ├─ deployment.xml
+│  ├─ inspectionProfiles
+│  │  └─ Project_Default.xml
+│  ├─ jsLibraryMappings.xml
+│  ├─ jsLinters
+│  │  └─ eslint.xml
+│  ├─ jsonSchemas.xml
+│  ├─ modules.xml
+│  ├─ prettier.xml
+│  ├─ vcs.xml
+│  └─ webResources.xml
+├─ .nano-staged.mjs
+├─ .npmrc
+├─ .prettierignore
+├─ .prettierrc
+├─ .simple-git-hooks.json
+├─ .vscode
+│  └─ launch.json
+├─ LICENSE
+├─ README.md
+├─ contributing.md
+├─ package-lock.json
+├─ package.json
+├─ packages
+│  ├─ main
+│  │  ├─ src
+│  │  │  ├─ index.ts
+│  │  │  ├─ mainWindow.ts
+│  │  │  └─ security-restrictions.ts
+│  │  ├─ tests
+│  │  │  └─ unit.spec.ts
+│  │  ├─ tsconfig.json
+│  │  └─ vite.config.js
+│  ├─ preload
+│  │  ├─ src
+│  │  │  ├─ index.ts
+│  │  │  └─ versions.ts
+│  │  ├─ tests
+│  │  │  └─ unit.spec.ts
+│  │  ├─ tsconfig.json
+│  │  └─ vite.config.js
+│  └─ renderer
+│     ├─ .eslintrc.json
+│     ├─ assets
+│     │  └─ logo.svg
+│     ├─ index.html
+│     ├─ src
+│     │  ├─ App.vue
+│     │  ├─ components
+│     │  │  ├─ ElectronVersions.vue
+│     │  │  ├─ ReactiveCounter.vue
+│     │  │  └─ ReactiveHash.vue
+│     │  └─ index.ts
+│     ├─ tests
+│     │  ├─ ElectronVersions.spec.ts
+│     │  ├─ ReactiveCounter.spec.ts
+│     │  └─ ReactiveHash.spec.ts
+│     ├─ tsconfig.json
+│     ├─ types
+│     │  └─ shims-vue.d.ts
+│     └─ vite.config.js
+├─ scripts
+│  ├─ update-electron-vendors.mjs
+│  └─ watch.mjs
+├─ tests
+│  └─ e2e.spec.ts
+├─ types
+│  └─ env.d.ts
+├─ version
+│  ├─ getVersion.mjs
+│  └─ inject-app-version-plugin.mjs
+└─ vitest.config.js
 
-[cawa-93-sponsor]: https://www.patreon.com/Kozack/
+```
