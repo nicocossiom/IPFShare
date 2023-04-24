@@ -1,6 +1,6 @@
 {
   "name": "ipfshare",
-  "version": "1.0",
+  "version": "1.0.0",
   "main": "dist-electron/main/index.js",
   "description": "IPFShare",
   "author": "Nicolas Cossio",
@@ -18,18 +18,24 @@
   },
   "dependencies": {
     "electron-updater": "^5.3.0",
+    "go-ipfs": "^0.19.0",
     "ipfs": "^0.66.0",
     "ipfs-http-client": "^60.0.0",
     "ipfsd-ctl": "^13.0.0",
-    "go-ipfs": "^0.19.0",
-    "kubo-rpc-client": "^3.0.1"
+    "kubo-rpc-client": "^3.0.1",
+    "orbit-db": "^0.29.0"
   },
   "devDependencies": {
+    "@constl/orbit-db-types": "^1.0.7",
     "@types/react": "^18.0.28",
     "@types/react-dom": "^18.0.11",
+    "@typescript-eslint/eslint-plugin": "^5.59.1",
+    "@typescript-eslint/parser": "^5.59.0",
     "@vitejs/plugin-react": "^3.1.0",
     "electron": "^23.2.0",
     "electron-builder": "^23.6.0",
+    "eslint": "^8.39.0",
+    "eslint-plugin-react": "^7.32.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "typescript": "^5.0.2",
