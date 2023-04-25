@@ -1,17 +1,14 @@
 import { app } from "electron"
 import type { Controller, ControllerType, Factory, IPFSOptions } from "ipfsd-ctl"
 
-
-
-
 export class IPFSNodeManager {
     mainNode!: Controller<ControllerType>
     private factory: Factory<ControllerType> | undefined
     // constructor
     constructor() {
-        return (async () : Promise<IPFSNodeManager> => {
+        return (async (): Promise<IPFSNodeManager> => {
             this.factory = await this.createFactory()
-            this.mainNode = await this.factory.spawn()
+            this.mainNode = await this.factory.spawn({type: "go"} )
             return this
         })() as unknown as IPFSNodeManager
         
@@ -56,6 +53,9 @@ export class IPFSNodeManager {
                 go: {
                     ipfsBin: goIpfsModule.path(),
                 },
+                proc: {
+                    ipfsClientModule: ipfsModule.path(),
+                }
             },
         )
     }

@@ -3,8 +3,9 @@ import * as fs from "fs"
 import { release } from "node:os"
 import { join } from "node:path"
 // import type { OrbitDB } from "orbit-db"
-import OrbitDB from "orbit-db"
+import { Controller } from "ipfsd-ctl"
 import { IPFSNodeManager } from "../ipfs_utils/ipfs_utils"
+import { startOrbitdb } from "./prueba"
 import { createTray, tray } from "./tray"
 
 //async anonymous function
@@ -45,6 +46,7 @@ if (!app.requestSingleInstanceLock()) {
 process.env["ELECTRON_DISABLE_SECURITY_WARNINGS"] = "true"
 
 let win: BrowserWindow | null = null
+
 // Here, you can also use other preload
 const preload = join(__dirname, "../preload/index.js")
 const url = process.env.VITE_DEV_SERVER_URL
@@ -118,17 +120,17 @@ let ctx: AppContext
 interface AppContext {
     ipfsNodeManager: IPFSNodeManager, 
     appDataDir: string,
-    orbitDBInstance?: OrbitDB
+    ipfsNode: Controller<"go">
 }
-
-
 
 async function startNode() {
     console.log("Creating IPFSNodeManager")
-    ctx = {
-        ipfsNodeManager: await new IPFSNodeManager(), 
-        appDataDir:  app.getPath("appData"), 
-    }    
+    const nodeManager = await new IPFSNodeManager(),
+        ctx = {
+            ipfsNodeManager: nodeManager, 
+            appDataDir: app.getPath("appData"), 
+            ipfsNode: nodeManager.mainNode
+        }    
     console.log("IPFSNodeManager createed")
     console.log(ctx.ipfsNodeManager.mainNode)
     await ctx.ipfsNodeManager.mainNode.init()
@@ -136,24 +138,11 @@ async function startNode() {
         .catch((err) => console.log("Node start error: ", err))
 }
 
-async function startOrbitDB() {
-    console.log("Starting OrbitDB")
-    ctx.orbitDBInstance = await OrbitDB.createInstance(ctx.ipfsNodeManager.mainNode)
-        .then((orbit) => {
-            console.log("OrbitDB instance created")
-            return orbit
-        })
-        .catch((err) => {
-            console.log("OrbitDB instance creation error: ", err)
-            return undefined
-        })
-    console.log("OrbitDB started")
-}
 
 app.whenReady()
-    .then(createWindow)
-    .then(startNode)
-    .then(startOrbitDB)
+    // .then(createWindow)
+    // .then(startNode)
+    .then(startOrbitdb)
 
 
 app.on("window-all-closed", () => {
@@ -198,3 +187,4 @@ ipcMain.handle("open-win", (_, arg) => {
 
 
 export { createWindow, ctx }
+
