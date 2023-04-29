@@ -1,53 +1,30 @@
-import  from "ipfs"
-import OrbitDB from "orbit-db"
+import { IPFSNodeManager } from "../ipfs_utils/ipfs_utils"
+import { orbitdb } from "./exporter"
 
-
-interface ContextApp {
-    ipfs: IPFS 
-    orbitdb: OrbitDB 
-}
-
-const ctx: ContextApp = {} as ContextApp
-
+/**
+ * Loads and initializes IPFS and OrbitDB modules, creates instances and stores them in the context
+ */
 async function loadContext() {
-    console.log("Loading context")
-    console.log(" 📦 Importing IPFS module ... ")
-    const IPFS = await import("ipfs")
-    console.log("✅ Success")
-    console.log("🌐 Starting IPFS node ...")
-    const ipfs = await IPFS.create()
-    console.log("✅ Success")
-    console.log(" 📦 Importing  OrbitDB module ... ")
-    const orbitdbModule = await import("orbit-db")
-    console.log("✅ Success")
-    console.log("🪐 Starting OrbitDB node ..."  )
-    const orbitdb = await orbitdbModule.default.createInstance(ipfs)
-    console.log("✅ Success")
-    ctx.ipfs = ipfs
-    ctx.orbitdb = orbitdb
-    console.log("Context loaded")
-    console.log(ctx)
+
+    const manager = await new IPFSNodeManager() 
+    let node1 = await manager.createNode()
+    node1 = await node1.init()
+    console.log(`Node 1 ${await node1.start()}\n`)
+    console.log(node1)
+    console.log(" 📦 Importing OrbitDB module ... ")
+    const orbit = await orbitdb.default.createInstance(node1.api)
+    console.log("OrbitDB instance created")
+    const db = await orbit.log("test")
+    console.log("OrbitDB log created")
+    await db.load()
+    console.log("OrbitDB log loaded")
+    const hash = await db.add("Hello world")
+    const retrieved = db.get(hash)
+    console.log(retrieved.payload.value)
 }
 
 
-async function main() {
-    const dirDb = await ctx.orbitdb.docstore("fs", {indexBy: "path"})
-    await dirDb.load()
-    dirDb.put({path: "test", cid: "QmTest"})
-    console.log(dirDb.get("test"))
-}
-// async function addDirectory(ipfs : IPFS, dirPath: string, dirDb: DocumentStore<) {
-//     // Add the directory and its contents to IPFS
-//     const files = await ipfs.addAll(fs.createReadStream(dirPath), { recursive: true })
 
-//     // Store the CIDs and paths in OrbitDB
-//     for (const file of files) {
-//         const entry = { path: file.path, cid: file.cid.toString() }
-//         await dirDb.put(entry)
-//     }
-// }
-
-export async function startOrbitdb() {
+export async function startPrueba() {
     await loadContext().catch((err) => console.log("Error loading context: ", err))
-    await main().then(() => console.log("Main finished"))
 }

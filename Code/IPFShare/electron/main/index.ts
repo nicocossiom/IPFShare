@@ -5,7 +5,8 @@ import { join } from "node:path"
 // import type { OrbitDB } from "orbit-db"
 import { Controller } from "ipfsd-ctl"
 import { IPFSNodeManager } from "../ipfs_utils/ipfs_utils"
-import { startOrbitdb } from "./prueba"
+import { ensureModulesLoaded } from "./exporter"
+import { startPrueba } from "./prueba"
 import { createTray, tray } from "./tray"
 
 //async anonymous function
@@ -111,7 +112,7 @@ if (process.platform === "darwin") {
         })
     }
     app.setPath("appData", ipfsharePath)
-    console.log(app.getPath("appData"),)
+    console.log("Application data path: ", app.getPath("appData"))
 }
 
 
@@ -123,26 +124,11 @@ interface AppContext {
     ipfsNode: Controller<"go">
 }
 
-async function startNode() {
-    console.log("Creating IPFSNodeManager")
-    const nodeManager = await new IPFSNodeManager(),
-        ctx = {
-            ipfsNodeManager: nodeManager, 
-            appDataDir: app.getPath("appData"), 
-            ipfsNode: nodeManager.mainNode
-        }    
-    console.log("IPFSNodeManager createed")
-    console.log(ctx.ipfsNodeManager.mainNode)
-    await ctx.ipfsNodeManager.mainNode.init()
-    await ctx.ipfsNodeManager.mainNode?.start()
-        .catch((err) => console.log("Node start error: ", err))
-}
-
 
 app.whenReady()
     // .then(createWindow)
-    // .then(startNode)
-    .then(startOrbitdb)
+    .then(ensureModulesLoaded)
+    .then(startPrueba)
 
 
 app.on("window-all-closed", () => {
