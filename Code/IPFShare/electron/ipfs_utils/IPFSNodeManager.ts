@@ -51,7 +51,6 @@ class IPFSNodeManager {
             path.join(app.getPath("appData"), "jsRepos", this.nodes.length.toString())
             : goIPFSRepo
         const config = newNodeConfig(type, { apiPort: this.apiPort, swarmPort: this.swarmPort, gateawayPort: this.gatewayPort })
-        console.log(config)
         // console.log(`Swarm port: ${this.swarmPort}, API port: ${this.port}`)
         // if (this.currentConfig !== undefined) {
         //     console.log(this.currentConfig.config)
