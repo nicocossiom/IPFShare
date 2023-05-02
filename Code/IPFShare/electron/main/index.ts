@@ -4,7 +4,7 @@ import { release } from "node:os"
 import { join } from "node:path"
 // import type { OrbitDB } from "orbit-db"
 import { Controller } from "ipfsd-ctl"
-import { IPFSNodeManager } from "../ipfs_utils/ipfs_utils"
+import { IPFSNodeManager } from "../ipfs_utils/IPFSNodeManager"
 import { ensureModulesLoaded } from "./exporter"
 import { startPrueba } from "./prueba"
 import { createTray, tray } from "./tray"
@@ -97,6 +97,10 @@ if (process.platform === "darwin") {
     // check if it exists
     if (!fs.existsSync(ipfsharePath)) {
         fs.mkdirSync(ipfsharePath)
+        // create a directory called goRepos
+        fs.mkdirSync(join(ipfsharePath, "goRepos"))
+        // create a directory called jsRepos
+        fs.mkdirSync(join(ipfsharePath, "jsRepos"))
     }
     else {
         fs.stat(ipfsharePath, (err, stats) => {
@@ -107,6 +111,10 @@ if (process.platform === "darwin") {
                 if (!stats.isDirectory()) {
                     fs.rmSync(ipfsharePath)
                     fs.mkdirSync(ipfsharePath)
+                    // create a directory called goRepos
+                    fs.mkdirSync(join(ipfsharePath, "goRepos"))
+                    // create a directory called jsRepos
+                    fs.mkdirSync(join(ipfsharePath, "jsRepos"))
                 }
             }
         })

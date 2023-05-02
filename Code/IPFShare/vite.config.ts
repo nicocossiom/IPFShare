@@ -2,6 +2,7 @@ import react from "@vitejs/plugin-react"
 import { rmSync } from "node:fs"
 import path from "node:path"
 import { defineConfig } from "vite"
+
 import electron from "vite-plugin-electron"
 import renderer from "vite-plugin-electron-renderer"
 import pkg from "./package.json"
@@ -13,28 +14,17 @@ export default defineConfig(({ command }) => {
     const isServe = command === "serve"
     const isBuild = command === "build"
     const sourcemap = isServe || !!process.env.VSCODE_DEBUG
-    // Retrieve the keys from dependencies and add "electron/main/exporter"
-    const externalModules = [
-        ...Object.keys("dependencies" in pkg ? pkg.dependencies : {}),
-        // "electron/main/exporter.ts",
-    ]
+
     return {
         resolve: {
             alias: {
-                "@": path.resolve(__dirname, "electron")
+                "@": path.join(__dirname, "src")
             },
         },
-        envDir: "./", 
         plugins: [
-            // topLevelAwait({
-            //     // The export name of top-level await promise for each chunk module
-            //     promiseExportName: "__tla",
-            //     // The function to generate import names of top-level await promise in each chunk module
-            //     promiseImportName: i => `__tla_${i}`
-            // }), 
             react(),
             electron([
-                {
+                {   
                     // Main-Process entry file of the Electron App.
                     entry: "electron/main/index.ts",
                     onstart(options) {
@@ -46,12 +36,11 @@ export default defineConfig(({ command }) => {
                     },
                     vite: {
                         build: {
-                            target: "esnext",
                             sourcemap,
                             minify: isBuild,
                             outDir: "dist-electron/main",
                             rollupOptions: {
-                                external: externalModules,
+                                external: Object.keys("dependencies" in pkg ? pkg.dependencies : {}),
                             },
                         },
                     },
@@ -65,12 +54,12 @@ export default defineConfig(({ command }) => {
                     },
                     vite: {
                         build: {
-                            target: "esnext",
                             sourcemap: sourcemap ? "inline" : undefined, // #332
                             minify: isBuild,
                             outDir: "dist-electron/preload",
                             rollupOptions: {
-                                external: externalModules,
+                                
+                                external: Object.keys("dependencies" in pkg ? pkg.dependencies : {}),
                             },
                         },
                     },
