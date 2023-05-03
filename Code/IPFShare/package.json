@@ -25,7 +25,6 @@
     "@types/orbit-db": "github:orbitdb/orbit-db-types",
     "dids": "^4.0.1",
     "go-ipfs": "^0.19.0",
-    "ipfs": "^0.66.0",
     "ipfs-http-client": "^60.0.0",
     "ipfs-pubsub-room": "^3.0.0",
     "ipfsd-ctl": "^13.0.0",

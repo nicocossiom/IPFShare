@@ -1,0 +1,52 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "lib": [
+      "ESNext"
+    ],
+    "types": [
+      "node"
+    ],
+    "module": "nodenext",
+    "rootDir": "./",
+    "moduleResolution": "nodenext",
+    "moduleDetection": "force",
+    "baseUrl": "./",
+    "paths": {
+      "@app/*": [
+        "./src/*",
+        "./dist/src/*"
+      ],
+      "@common/*": [
+        "./src/common/*",
+        "./dist/src/common/*"
+      ],
+    },
+    "noEmit": false,
+    "noEmitOnError": true,
+    "resolveJsonModule": true,
+    "sourceMap": true,
+    "outDir": "./dist",
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    // "noUnusedLocals": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "skipLibCheck": true,
+    "noUncheckedIndexedAccess": true,
+    "useDefineForClassFields": true,
+    "declaration": true,
+    "pretty": true,
+  },
+  "include": [
+    "./src/**/*",
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+}
