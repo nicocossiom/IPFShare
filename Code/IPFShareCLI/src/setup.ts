@@ -1,12 +1,10 @@
+import { addLoggerFileTransportsAfterHomeSet, logger } from '@common/logger.js'
+import { IPFSNodeManager } from '@ipfs/IPFSNodeManager.js'
 import chalk from 'chalk'
 import fs from 'fs'
 import inquirer from 'inquirer'
 import os from 'os'
-import { join } from 'path'
-import { IPFSNodeManager } from './ipfs/IPFSNodeManager.js'
-import { logger } from '@common/logger.js';
-
-export const appDir = os.homedir() + '/.ipfshare'
+import path from 'path'
 
 async function setAndCreateAppDataFolder(): Promise<void> {
     return await inquirer.prompt([
@@ -18,28 +16,22 @@ async function setAndCreateAppDataFolder(): Promise<void> {
             suffix: '  ⏎ for',
             default: '~/.ipfshare'
         }
-    ]).then(async ({ answer }: { answer: string }) => {
+    ]).catch((err) => {
+        console.log(chalk.red(err))
+        throw err
+    }).then(async ({ answer }: { answer: string }) => {
         if (answer === '~/.ipfshare')
-            answer = appDir
+            answer = path.join(os.homedir(), '.ipfshare')
         if (fs.mkdirSync(answer, { recursive: true }) === undefined) {
             console.log('\n' + chalk.red(`Failed to create 📁 at ${'"' + answer + '"'}`) + '\n')
             console.log(chalk.yellow('Please try again\n'))
             return await setAndCreateAppDataFolder()
         }
         console.log('\n' + `Created 📁 and IPFShare home set to ${chalk.italic.green('"' + answer + '"')}`)
-        // create a directory called goRepos
-        fs.mkdirSync(join(appDir, 'goRepos'))
-        // create a directory called jsRepos
-        fs.mkdirSync(join(appDir, 'jsRepos'))    
-        process.env.IPFSHARE_HOME = appDir
-        console.log('Application data path: ', appDir)
-
-
+        logger.info(`dirnameee ${path.join(path.resolve(), '.env')}`)
+        logger.info(`Application data path: ${answer}`)
+        process.env.IPFSHARE_HOME = answer
     })
-        .catch((err) => {
-            console.log(chalk.red(err))
-            throw err
-        })
 }
 
 
@@ -59,7 +51,7 @@ export async function resetup() {
             
         } else {
             console.log(chalk.yellow('Exiting'))
-            process.exit(1)
+            // process.exit(1)
         }
     })
 }
@@ -83,7 +75,7 @@ async function checkIfSetup() {
 
         } else {
             console.log(chalk.yellow('Exiting'))
-            process.exit(1)
+            // process.exit(1)
         }
     }
     // TODO check if the folder is valid for real for real
@@ -92,16 +84,21 @@ async function checkIfSetup() {
 
 async function startIPFSManager() {
     const manager = new IPFSNodeManager()
-    const node = await manager.createNode()
-    console.log(node)
-
+    return await manager.createNode()
 }
 
 export async function initialSetup() {
-    const isSetup = await checkIfSetup()
-    if (!isSetup) await setAndCreateAppDataFolder()
-    logger = loggerCreate()
-    await startIPFSManager()
-    console.log('\n' +`✅ ${chalk.greenBright('IPFShare setup complete')}` + '\n')
+    let isSetup = await checkIfSetup()
+    if (!isSetup) {
+        await setAndCreateAppDataFolder()
+    }
+    if (!process.env.IPFSHARE_HOME)
+        throw new Error('IPFShare home not set')
+    addLoggerFileTransportsAfterHomeSet()
+    const node = await startIPFSManager()
+    if (!isSetup) console.log('\n' + `✅ ${chalk.greenBright('IPFShare setup complete')}` + '\n')
+    isSetup = true
+    // relaunch this process
+    return node
 }
 

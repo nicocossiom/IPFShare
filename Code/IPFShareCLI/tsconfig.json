@@ -21,6 +21,10 @@
         "./src/common/*",
         "./dist/src/common/*"
       ],
+      "@ipfs/*": [
+        "./src/ipfs/*",
+        "./dist/src/ipfs/*"
+      ],
     },
     "noEmit": false,
     "noEmitOnError": true,

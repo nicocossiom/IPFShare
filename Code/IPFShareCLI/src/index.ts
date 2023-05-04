@@ -1,3 +1,7 @@
-import { programStart } from '@app/cli.js'
+// import { initialSetup } from '@app/setup.js'
+import { program } from '@app/cli.js'
 
-programStart()
+// const node = await initialSetup()
+// await program.parseAsync(process.argv)
+program.parse(process.argv)
+// console.log(node)

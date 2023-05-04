@@ -1,15 +1,19 @@
 // import { mdns } from '@libp2p/mdns'
 // import { tcp } from '@libp2p/tcp'
+import { logger } from '@common/logger.js'
 import * as ipfsModule from 'ipfs'
 import { IPFS } from 'ipfs'
 import * as ipfsHTTpModule from 'ipfs-http-client'
 import type { Controller, ControllerType, Factory, IPFSOptions } from 'ipfsd-ctl'
 import * as Ctl from 'ipfsd-ctl'
+import * as kuboRpcModule from 'kubo-rpc-client'
 import path from 'node:path'
-import { newNodeConfig } from './ipfsNodeConfigs.js'
 // import { Libp2pOptions } from 'libp2p'
 // import { goIpfsModule, ipfsHTTpModule, ipfsd } from '@app/ipfs/exporter.js'
-const goIpfsModule = await import('go-ipfs')
+import { newNodeConfig } from '@ipfs/ipfsNodeConfigs.js'
+import fs from 'fs'
+import assert from 'node:assert'
+const goIpfsModule = await import(`go-ipfs`)
 // function libp2pConfig() {
 //     /** @type { */
 //     const options: Libp2pOptions = {
@@ -44,27 +48,41 @@ class IPFSNodeManager {
     private swarmPort = 4002
     private gatewayPort = 8090
     
-    private newConfig(type: 'go' | 'js' = 'go'): IPFSOptions {
+    private getRepoPath() { 
         if (process.env.IPFSHARE_HOME === undefined) {
-            throw new Error('IPFSHARE_HOME is not defined')
+            throw new Error(`IPFSHARE_HOME is not defined`)
         }
-        let goIPFSRepo = path.join(process.env.IPFSHARE_HOME, 'goRepos')
+        return path.join(process.env.IPFSHARE_HOME, `ipfsRepo`)
+    }
+
+    private getReposPath(type: `go` | `js` = `go`) {
+        if (process.env.IPFSHARE_HOME === undefined) {
+            throw new Error(`IPFSHARE_HOME is not defined`)
+        }
+        let goIPFSRepo = path.join(process.env.IPFSHARE_HOME, `goRepos`)
         goIPFSRepo = this.factory ?
             path.join(goIPFSRepo, this.factory.controllers.length.toString()) :
-            path.join(goIPFSRepo, '0')
-        const repo = type === 'js' ?
-            path.join(process.env.IPFSHARE_HOME!, 'jsRepos', this.nodes.length.toString())
+            path.join(goIPFSRepo, `0`)
+        const repo = type === `js` ?
+            path.join(process.env.IPFSHARE_HOME, `jsRepos`, this.nodes.length.toString())
             : goIPFSRepo
+        return repo
+    }
+
+    private newConfig(type: `go` | `js` = `go`): IPFSOptions {
+        if (process.env.IPFSHARE_HOME === undefined) {
+            throw new Error(`IPFSHARE_HOME is not defined`)
+        }
         const config = newNodeConfig(type, { apiPort: this.apiPort, swarmPort: this.swarmPort, gateawayPort: this.gatewayPort })
-        // logger.debug(`Swarm port: ${this.swarmPort}, API port: ${this.port}`)
-        // if (this.currentConfig !== undefined) {
-        //     logger.debug(this.currentConfig.config)
-        // }
         const ipfsBaseOptions: IPFSOptions = {
-            repo: repo,
-            config:config,
+            repo: this.getRepoPath(),
+            config: config,
+            init: {
+                allowNew: true,
+            }
 
         }
+        
         this.swarmPort += 2
         this.apiPort += 1
         this.gatewayPort += 1
@@ -72,46 +90,87 @@ class IPFSNodeManager {
         return ipfsBaseOptions
     }
 
+    // taken from https://github.com/ipfs/ipfs-desktop/blob/main/src/daemon/daemon.js
+    private isSpawnedDaemonDead(ipfs: Controller<ControllerType>): boolean{
+        console.log(`isSpawnedDaemonDead`)
+        if (ipfs.subprocess === undefined || ipfs.subprocess === null || ipfs.subprocess.exitCode != null)
+            return true
+        // detect when spawned ipfs process is gone/dead
+        // by inspecting its pid - it should be alive
+        if (ipfs.subprocess.pid === undefined)
+            return true 
+        // signal 0 throws if process is missing, noop otherwise
+        try {        
+            process.kill(ipfs.subprocess.pid, 0)
+        }
+        catch (err) {
+            return true
+        }
+        return false
+    }
+
     public async createNode(): Promise<Controller<ControllerType>> {
         if (!this.factory) {
             this.factory = await this.createFactory()
-            logger.debug('Factory created')
+        }
+        const repoPath = this.getRepoPath()
+        
+        let nodeConfig: IPFSOptions = { repo: repoPath}
+        const initializing = !fs.existsSync(repoPath)
+        if (initializing) {
+            fs.mkdirSync(repoPath)
+            if (!fs.existsSync(repoPath)) {
+                throw new Error(`Could not create repo path`)
+            }
+            logger.info(`New repo crated`)
+            nodeConfig = this.newConfig()
         }
         logger.debug(`Spawning node, current number of nodes: ${this.factory.controllers.length}`)
-        const node = await this.factory.spawn({ type: 'go', ipfsOptions: this.newConfig('go') })
-            .then(async (node) => {
-                logger.debug('Node spawned')
-                logger.debug(node)
-                return await node.init()
-                    .then(async (node) => {
-                        logger.debug('Node init')
-                        return await node.start()
-                            .then((node) => {
-                                logger.debug('Node started')
-                                logger.debug(node)
-                                return node
-                            })
-                            .catch((err) => { 
-                                logger.debug('error in node start', err) 
-                                throw err
-                            })
-                    })
-                    .catch((err) => { 
-                        logger.debug('error in node init', err) 
-                        throw err
-                    })
-            })
+        logger.debug(`Selected repo ${repoPath}`)
+        const ipfs: Controller<`go`> = await this.factory.spawn({ type: `go`, ipfsOptions: nodeConfig })
             .catch((err) => {
-                logger.debug('erorr spawning node', err)
+                logger.error(`erorr spawning node`, err)
                 throw err
             })
-        return node
+        await ipfs.init().catch((err) => {
+            logger.error(`error in node init`, err)
+            throw err
+        })
+        console.log(ipfs)
+        await ipfs.start()
+            .catch((err) => { 
+                logger.error(`error in node start`, err) 
+                throw err
+            })
+        // ipfs.subprocess?.unref()
+
+        logger.debug(`'Node started with pid ${ipfs.subprocess?.pid}`)
+        // handle sigkill
+        //catch sigkill
+    
+        process.on(`SIGINT`, async () => {
+            console.log(`SIGINT received`)
+            await ipfs.stop()
+            fs.rmSync(path.join(repoPath, `api`), {force:true})
+            process.exit(0)
+        }
+        )
+        return ipfs
+    }
+    
+    private stopListeningDaemon(ipfs: Controller<`go`>) {
+        if (this.isSpawnedDaemonDead(ipfs)) throw new Error(`Spawned daemon is dead`)
+        assert(ipfs.subprocess !== undefined && ipfs.subprocess !== null, `Spawned daemon subprocess is undefined or null`) 
+        // stop listening to spawned daemon
+        
+
+
     }
 
     public async createIPFSNode(): Promise<IPFS> {
         return await ipfsModule.create(this.nodes.length > 0 ? this.newConfig().config: this.currentConfig ).then((node: IPFS) => {
             this.nodes.push(node)
-            logger.debug('Node created, current number of nodes: ', this.nodes.length)
+            logger.debug(`Node created, current number of nodes: `, this.nodes.length)
             return node
         })
     }
@@ -120,11 +179,12 @@ class IPFSNodeManager {
         
         return Ctl.createFactory(
             {
-                type: 'go', // default type, can be overridden per spawn
+                type: `go`, // default type, can be overridden per spawn
                 disposable: false,
-                remote: false,
                 test: false,
+                remote: false,
                 ipfsHttpModule: ipfsHTTpModule,
+                kuboRpcModule: kuboRpcModule, 
                 ipfsModule: ipfsModule, // only if you gonna spawn 'proc' controllers
             },
             {
@@ -145,4 +205,6 @@ class IPFSNodeManager {
 }
 
 export { IPFSNodeManager }
+
+
 

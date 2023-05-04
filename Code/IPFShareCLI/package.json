@@ -8,6 +8,7 @@
   },
   "type": "module",
   "scripts": {
+    "start": "node dist/src/index.js",
     "watch": "concurrently --kill othgers \"tsc -w\" \"tsc-alias -w\" ",
     "build": "tsc && tsc-alias",
     "test": "echo \"Error: no test specified\" && exit 1"

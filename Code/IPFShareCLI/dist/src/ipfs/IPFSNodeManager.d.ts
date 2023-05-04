@@ -7,8 +7,12 @@ declare class IPFSNodeManager {
     private apiPort;
     private swarmPort;
     private gatewayPort;
+    private getRepoPath;
+    private getReposPath;
     private newConfig;
+    private isSpawnedDaemonDead;
     createNode(): Promise<Controller<ControllerType>>;
+    private stopListeningDaemon;
     createIPFSNode(): Promise<IPFS>;
     private createFactory;
 }
