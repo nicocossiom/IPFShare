@@ -15,5 +15,8 @@ declare class IPFSNodeManager {
     private stopListeningDaemon;
     createIPFSNode(): Promise<IPFS>;
     private createFactory;
+    static isDaemonRunning(): Promise<boolean>;
+    static startDaemon(): Promise<void>;
+    static stopDaemon(): Promise<void>;
 }
 export { IPFSNodeManager };

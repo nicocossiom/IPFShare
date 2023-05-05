@@ -1,6 +1,7 @@
 // import { mdns } from '@libp2p/mdns'
 // import { tcp } from '@libp2p/tcp'
 import { logger } from '@common/logger.js'
+import { isPortInUse } from '@common/utils.js'
 import * as ipfsModule from 'ipfs'
 import { IPFS } from 'ipfs'
 import * as ipfsHTTpModule from 'ipfs-http-client'
@@ -202,7 +203,39 @@ class IPFSNodeManager {
             },
         )
     }
+    
+    public static async isDaemonRunning(): Promise<boolean> {
+        if (process.env.IPFSHARE_HOME === undefined) {
+            throw new Error(`Setup was run but IPFShare home is not set`)
+        }
+        const repoLockPath = path.join(process.env.IPFSHARE_HOME, `ipfsRepo`, `repo.lock`)
+        const apiFilePath = path.join(process.env.IPFSHARE_HOME, `ipfsRepo`, `api`)
+        // apiFilePath contains a line like this one: /ip4/127.0.0.1/tcp/5001
+        const portMatch = fs.readFileSync(apiFilePath).toString().match(/(\d+)(?!.*\d)/) // port 
+        if (portMatch === null) return false
+        const apiPort = parseInt(portMatch[0])
+        return fs.existsSync(repoLockPath) && await isPortInUse(apiPort)
+    }
+
+    public static async startDaemon(): Promise<void> {
+        throw new Error(`Not implemented`)
+        // if (process.env.IPFSHARE_HOME === undefined) {
+        //     throw new Error(`Setup was run but IPFShare home is not set`)
+        // }
+        // const repoLockPath = path.join(process.env.IPFSHARE_HOME, `ipfsRepo`, `repo.lock`)
+            
+    }
+
+    public static async stopDaemon(): Promise<void> {
+        throw new Error(`Not implemented`)
+        // if (process.env.IPFSHARE_HOME === undefined) {
+        //     throw new Error(`Setup was run but IPFShare home is not set`)
+        // }
+        // const repoLockPath = path.join(process.env.IPFSHARE_HOME, `ipfsRepo`, `repo.lock`)
+            
+    }
 }
+
 
 export { IPFSNodeManager }
 
