@@ -1,3 +1,4 @@
+import { daemonPromptIfNeeded, setupPromptIfNeeded } from './setup.js';
 import chalk from 'chalk';
 import { Command } from 'commander';
 import figlet from 'figlet';
@@ -8,9 +9,15 @@ program
     .name(`ipfshare`)
     .addHelpText(`beforeAll`, `${chalk.yellow(figlet.textSync(`IPFShare`, { font: `Georgia11`, horizontalLayout: `default`, verticalLayout: `default` }))}`)
     .addHelpText(`before`, `An IPFS-based, encrypted file sharing CLI tool\n`)
-    .action(() => {
-    console.log(`No command specified. Run ipfshare --help for more info.`);
+    .action(async () => {
+    // default action (no arguments or options specified)
+    // checks if the program is setup, if not, asks the user if they want to setup
+    // after setup, the user is prompted to start the daemon
+    // if the daemon is not running the user is prompted to start it
+    await setupPromptIfNeeded();
+    await daemonPromptIfNeeded(); // checks if the daemon is running, if not it will prompt the user to start it
 });
+// TODO add more description
 program.command(`setup`)
     .summary(`Run initial setup`)
     .description(`Runs the initial setup: 
