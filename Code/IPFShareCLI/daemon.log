@@ -1,0 +1,193 @@
+2023-05-07 20:48:57 debug: Spawning node, current number of nodes: 0
+2023-05-07 20:48:57 debug: Selected repo /Users/pepperonico/.ipfshare/ipfsRepo
+Initializing IPFS daemon...
+
+System version: arm64/darwin
+Node.js version: 20.0.0
+
+Swarm listening on /ip4/127.0.0.1/tcp/4002/p2p/12D3KooWHLBjyaVfH1G7iDvWE1Lcs7b5SFVmFEGd1ku76qdbgCuk
+Swarm listening on /ip4/192.168.119.108/tcp/4002/p2p/12D3KooWHLBjyaVfH1G7iDvWE1Lcs7b5SFVmFEGd1ku76qdbgCuk
+
+Swarm listening on /ip4/127.0.0.1/tcp/4003/ws/p2p/12D3KooWHLBjyaVfH1G7iDvWE1Lcs7b5SFVmFEGd1ku76qdbgCuk
+
+js-ipfs version: 0.18.0
+HTTP API listening on /ip4/127.0.0.1/tcp/5002/http
+
+gRPC listening on /ip4/127.0.0.1/tcp/5003/ws
+Gateway (read only) listening on /ip4/127.0.0.1/tcp/8090/http
+Web UI available at http://127.0.0.1:5002/webui
+Daemon is ready
+
+2023-05-07 20:48:58 info: set max listeners to infinity, current max listeners: Infinity
+2023-05-07 20:48:58 debug: IPFS Daemon started with pid 30694
+(node:30694) MaxListenersExceededWarning: Possible EventTarget memory leak detected. 11 abort listeners added to [AbortSignal]. Use events.setMaxListeners() to increase limit
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+(node:30694) MaxListenersExceededWarning: Possible EventTarget memory leak detected. 11 abort listeners added to [AbortSignal]. Use events.setMaxListeners() to increase limit
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+(node:30694) MaxListenersExceededWarning: Possible EventTarget memory leak detected. 11 abort listeners added to [AbortSignal]. Use events.setMaxListeners() to increase limit
+
+(node:30694) MaxListenersExceededWarning: Possible EventTarget memory leak detected. 11 abort listeners added to [AbortSignal]. Use events.setMaxListeners() to increase limit
+
+Received interrupt signal, shutting down...
+
+Received interrupt signal, shutting down...
+
+2023-05-07 20:51:47 debug: Spawning node, current number of nodes: 0
+2023-05-07 20:51:47 debug: Selected repo /Users/pepperonico/.ipfshare/ipfsRepo
+Initializing IPFS daemon...
+
+System version: arm64/darwin
+Node.js version: 20.0.0
+
+Swarm listening on /ip4/127.0.0.1/tcp/4002/p2p/12D3KooWHLBjyaVfH1G7iDvWE1Lcs7b5SFVmFEGd1ku76qdbgCuk
+Swarm listening on /ip4/192.168.119.108/tcp/4002/p2p/12D3KooWHLBjyaVfH1G7iDvWE1Lcs7b5SFVmFEGd1ku76qdbgCuk
+
+Swarm listening on /ip4/127.0.0.1/tcp/4003/ws/p2p/12D3KooWHLBjyaVfH1G7iDvWE1Lcs7b5SFVmFEGd1ku76qdbgCuk
+
+js-ipfs version: 0.18.0
+HTTP API listening on /ip4/127.0.0.1/tcp/5002/http
+
+gRPC listening on /ip4/127.0.0.1/tcp/5003/ws
+Gateway (read only) listening on /ip4/127.0.0.1/tcp/8090/http
+Web UI available at http://127.0.0.1:5002/webui
+Daemon is ready
+
+2023-05-07 20:51:49 info: set max listeners to infinity, current max listeners: Infinity
+2023-05-07 20:51:49 debug: IPFS Daemon started with pid 32744
+(node:32744) MaxListenersExceededWarning: Possible EventTarget memory leak detected. 11 abort listeners added to [AbortSignal]. Use events.setMaxListeners() to increase limit
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+(node:32744) MaxListenersExceededWarning: Possible EventTarget memory leak detected. 11 abort listeners added to [AbortSignal]. Use events.setMaxListeners() to increase limit
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+(node:32744) MaxListenersExceededWarning: Possible EventTarget memory leak detected. 11 abort listeners added to [AbortSignal]. Use events.setMaxListeners() to increase limit
+
+(node:32744) MaxListenersExceededWarning: Possible EventTarget memory leak detected. 11 abort listeners added to [AbortSignal]. Use events.setMaxListeners() to increase limit
+
+Received interrupt signal, shutting down...
+
+Received interrupt signal, shutting down...
+
+2023-05-07 21:30:29 debug: Spawning node, current number of nodes: 0
+2023-05-07 21:30:29 debug: Selected repo /Users/pepperonico/.ipfshare/ipfsRepo
+2023-05-07 21:30:33 info: set max listeners to infinity, current max listeners: Infinity
+2023-05-07 21:30:33 debug: IPFS Daemon started with pid 62453
+Received interrupt signal, shutting down...
+
+2023-05-07 21:46:11 debug: Spawning node, current number of nodes: 0
+2023-05-07 21:46:11 debug: Selected repo /Users/pepperonico/.ipfshare/ipfsRepo
+2023-05-07 21:46:14 info: set max listeners to infinity, current max listeners: Infinity
+2023-05-07 21:46:14 debug: IPFS Daemon started with pid 74995
+(node:74995) MaxListenersExceededWarning: Possible EventTarget memory leak detected. 11 abort listeners added to [AbortSignal]. Use events.setMaxListeners() to increase limit
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+(node:74995) MaxListenersExceededWarning: Possible EventTarget memory leak detected. 11 abort listeners added to [AbortSignal]. Use events.setMaxListeners() to increase limit
+
+Received interrupt signal, shutting down...
+
+2023-05-07 22:13:11 debug: Spawning node, current number of nodes: 0
+2023-05-07 22:13:11 debug: Selected repo /Users/pepperonico/.ipfshare/ipfsRepo
+2023-05-07 22:14:14 info: New repo crated
+2023-05-07 22:14:14 debug: Spawning node, current number of nodes: 0
+2023-05-07 22:14:14 debug: Selected repo /Users/pepperonico/.ipfshare/ipfsRepo
+2023-05-07 22:14:15 info: set max listeners to infinity, current max listeners: Infinity
+2023-05-07 22:14:15 debug: IPFS Daemon started with pid 1152
+
+Received interrupt signal, shutting down...
+
+(Hit ctrl-c again to force-shutdown the daemon.)
+
+2023-05-07 22:29:08 info: New repo crated
+2023-05-07 22:29:08 debug: Spawning node, current number of nodes: 0
+2023-05-07 22:29:08 debug: Selected repo /Users/pepperonico/.ipfshare/ipfsRepo
+2023-05-07 22:29:09 info: set max listeners to infinity, current max listeners: Infinity
+2023-05-07 22:29:09 debug: IPFS Daemon started with pid 11088
+
+Received interrupt signal, shutting down...
+(Hit ctrl-c again to force-shutdown the daemon.)
+
+2023-05-07 22:29:16 error: error in node start Initializing daemon...
+Kubo version: 0.19.2
+Repo version: 13
+System version: arm64/darwin
+Golang version: go1.19.8
+Found outdated fs-repo, migrations need to be run.
+Run migrations now? [y/N] 
+Received another interrupt before graceful shutdown, terminating... 
+
+  
+
+ Command failed with exit code 255: /Users/pepperonico/Developer/upm/IPFShare/Code/IPFShareCLI/node_modules/.pnpm/go-ipfs@0.19.2/node_modules/go-ipfs/go-ipfs/ipfs daemon
+Initializing daemon...
+Kubo version: 0.19.2
+Repo version: 13
+System version: arm64/darwin
+Golang version: go1.19.8
+Found outdated fs-repo, migrations need to be run.
+Run migrations now? [y/N] 
+Received another interrupt before graceful shutdown, terminating... 
+
+
+node:internal/process/promises:289
+            triggerUncaughtException(err, true /* fromPromise */);
+            ^
+
+Error: Initializing daemon...
+Kubo version: 0.19.2
+Repo version: 13
+System version: arm64/darwin
+Golang version: go1.19.8
+Found outdated fs-repo, migrations need to be run.
+Run migrations now? [y/N] 
+Received another interrupt before graceful shutdown, terminating... 
+
+  
+
+ Command failed with exit code 255: /Users/pepperonico/Developer/upm/IPFShare/Code/IPFShareCLI/node_modules/.pnpm/go-ipfs@0.19.2/node_modules/go-ipfs/go-ipfs/ipfs daemon
+Initializing daemon...
+Kubo version: 0.19.2
+Repo version: 13
+System version: arm64/darwin
+Golang version: go1.19.8
+Found outdated fs-repo, migrations need to be run.
+Run migrations now? [y/N] 
+Received another interrupt before graceful shutdown, terminating... 
+
+
+    at makeError (file:///Users/pepperonico/Developer/upm/IPFShare/Code/IPFShareCLI/node_modules/.pnpm/execa@6.1.0/node_modules/execa/lib/error.js:59:11)
+    at handlePromise (file:///Users/pepperonico/Developer/upm/IPFShare/Code/IPFShareCLI/node_modules/.pnpm/execa@6.1.0/node_modules/execa/index.js:119:26)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5) {
+  shortMessage: 'Command failed with exit code 255: /Users/pepperonico/Developer/upm/IPFShare/Code/IPFShareCLI/node_modules/.pnpm/go-ipfs@0.19.2/node_modules/go-ipfs/go-ipfs/ipfs daemon',
+  command: '/Users/pepperonico/Developer/upm/IPFShare/Code/IPFShareCLI/node_modules/.pnpm/go-ipfs@0.19.2/node_modules/go-ipfs/go-ipfs/ipfs daemon',
+  escapedCommand: '"/Users/pepperonico/Developer/upm/IPFShare/Code/IPFShareCLI/node_modules/.pnpm/go-ipfs@0.19.2/node_modules/go-ipfs/go-ipfs/ipfs" daemon',
+  exitCode: 255,
+  signal: undefined,
+  signalDescription: undefined,
+  stdout: 'Initializing daemon...\n' +
+    'Kubo version: 0.19.2\n' +
+    'Repo version: 13\n' +
+    'System version: arm64/darwin\n' +
+    'Golang version: go1.19.8\n' +
+    'Found outdated fs-repo, migrations need to be run.\n' +
+    'Run migrations now? [y/N] \n' +
+    'Received another interrupt before graceful shutdown, terminating...',
+  stderr: '',
+  failed: true,
+  timedOut: false,
+  isCanceled: false,
+  killed: false
+}
+
+Node.js v20.0.0
+2023-05-07 22:29:36 debug: Spawning node, current number of nodes: 0
+2023-05-07 22:29:36 debug: Selected repo /Users/pepperonico/.ipfshare/ipfsRepo
+2023-05-07 22:29:37 info: set max listeners to infinity, current max listeners: Infinity
+2023-05-07 22:29:37 debug: IPFS Daemon started with pid 11753
+
+Received interrupt signal, shutting down...
+(Hit ctrl-c again to force-shutdown the daemon.)
+
+2023-05-07T22:33:14.364+0200	ERROR	flatfs	go-ds-flatfs@v0.5.1/flatfs.go:997	could not store final value of disk usage to file, future estimates may be inaccurate
+

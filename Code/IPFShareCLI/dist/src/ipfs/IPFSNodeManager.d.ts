@@ -1,5 +1,6 @@
 import { IPFS } from 'ipfs';
-import type { Controller, ControllerType, Factory } from 'ipfsd-ctl';
+import type { ControllerType, Factory } from 'ipfsd-ctl';
+import * as Ctl from 'ipfsd-ctl';
 declare class IPFSNodeManager {
     factory: Factory<ControllerType> | undefined;
     private currentConfig;
@@ -10,8 +11,7 @@ declare class IPFSNodeManager {
     private static getRepoPath;
     private getReposPath;
     private newConfig;
-    private isSpawnedDaemonDead;
-    createNode(): Promise<Controller<ControllerType>>;
+    createNode(): Promise<Ctl.Controller<ControllerType>>;
     createIPFSNode(): Promise<IPFS>;
     private createFactory;
     static isDaemonRunning(): Promise<boolean>;

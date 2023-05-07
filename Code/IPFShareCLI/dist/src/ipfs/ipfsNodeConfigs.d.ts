@@ -85,6 +85,7 @@ export declare function newNodeConfig(type?: `go` | `js`, options?: IpfsNodeConf
         RecordLifetime: string;
         RepublishPeriod: string;
         ResolveCacheSize: number;
+        UsePubsub: boolean;
     };
     Migration: {
         DownloadSources: never[];
@@ -103,8 +104,9 @@ export declare function newNodeConfig(type?: `go` | `js`, options?: IpfsNodeConf
         Strategy: string;
     };
     Pubsub: {
-        DisableSigning: boolean;
         Router: string;
+        Enabled: boolean;
+        DisableSigning: boolean;
     };
     Reprovider: {};
     Routing: {
@@ -116,15 +118,19 @@ export declare function newNodeConfig(type?: `go` | `js`, options?: IpfsNodeConf
         ConnMgr: {};
         DisableBandwidthMetrics: boolean;
         DisableNatPortMap: boolean;
-        RelayClient: {};
-        RelayService: {};
-        ResourceMgr: {
-            Limits: {};
-        };
-        Transports: {
-            Multiplexers: {};
-            Network: {};
-            Security: {};
+        RelayClient: {
+            AutoRelay: {
+                Enabled: boolean;
+            };
+            RelayService: {};
+            ResourceMgr: {
+                Limits: {};
+            };
+            Transports: {
+                Multiplexers: {};
+                Network: {};
+                Security: {};
+            };
         };
     };
 } | {
@@ -141,7 +147,7 @@ export declare function newNodeConfig(type?: `go` | `js`, options?: IpfsNodeConf
     };
     Pubsub: {
         Enabled: boolean;
-        PubSubRouter: string;
+        Router: string;
     };
     Swarm: {
         RelayClient: {

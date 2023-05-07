@@ -69,7 +69,7 @@ const friendsCommand = program.command(`friends`)
         if (!options || Object.keys(options).length === 0) {
             command.help()
         }
-        if (options.add) return await addKnownPeer(options.add)
+        if (options.add) return addKnownPeer(options.add)
         if (options.remove) return await removeKnownPeer(options.remove)
         if (options.list) return await listFriends()
     })

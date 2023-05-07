@@ -1,10 +1,10 @@
-import { ctx } from '@app/index.js'
 import chalk from "chalk"
+import { logger } from './common/logger.js'
 import { initializeContext } from "./common/utils.js"
+import { ctx } from "./index.js"
 import { getOrbitDB } from "./orbitdb.js"
 
 type PeerDocument = { peerId: string , alias: string}
-
 
 function parsePeersForAliases(peers: string[]){
     const parsedPeers = []
@@ -15,7 +15,9 @@ function parsePeersForAliases(peers: string[]){
     }
     return parsedPeers
 }
+
 export async function addKnownPeer(peers: string[]) {
+    logger.info(`Adding peers ${peers}`)
     const parsedPeers = parsePeersForAliases(peers)
     await initializeContext()
     const orbit = ctx.orbitdb ?? await getOrbitDB()
@@ -24,7 +26,9 @@ export async function addKnownPeer(peers: string[]) {
     for (const {peerId, alias} of parsedPeers) {
         const res = await peersDB.put(alias, { peerId, alias })
         console.log(chalk.green(`Added ${alias} with peerId ${peerId}`))
+        logger.debug(`transaction result ${res}`)
     }
+    await orbit.disconnect()
 }
 
 export async function removeKnownPeer(peers: string[]) {

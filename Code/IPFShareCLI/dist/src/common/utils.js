@@ -27,6 +27,7 @@ export async function initializeContext() {
         ctx.manager = await new IPFSNodeManager();
         const ipfs = await ctx.manager.createNode();
         (await ipfs).start();
+        ctx.ipfs = ipfs;
         ctx.orbitdb = await getOrbitDB();
     }
 }

@@ -5,14 +5,14 @@ import { isPortInUse } from '@app/common/utils.js'
 import { logger } from '@common/logger.js'
 import { newNodeConfig } from '@ipfs/ipfsNodeConfigs.js'
 import fs from 'fs'
+import * as goIPFSModule from 'go-ipfs'
 import * as ipfsModule from 'ipfs'
 import { IPFS } from 'ipfs'
 import * as ipfsHTTpModule from 'ipfs-http-client'
-import type { Controller, ControllerType, Factory, IPFSOptions } from 'ipfsd-ctl'
+import type { ControllerType, Factory, IPFSOptions } from 'ipfsd-ctl'
 import * as Ctl from 'ipfsd-ctl'
 import path from 'node:path'
 import psList from 'ps-list'
-const goIpfsModule = await import(`go-ipfs`)
 
 // function libp2pConfig() {
 //     /** @type { */
@@ -89,26 +89,7 @@ class IPFSNodeManager {
         return ipfsBaseOptions
     }
 
-    // credit:  https://github.com/ipfs/ipfs-desktop/blob/main/src/daemon/daemon.js
-    private isSpawnedDaemonDead(ipfs: Controller<ControllerType>): boolean{
-        console.log(`isSpawnedDaemonDead`)
-        if (ipfs.subprocess === undefined || ipfs.subprocess === null || ipfs.subprocess.exitCode != null)
-            return true
-        // detect when spawned ipfs process is gone/dead
-        // by inspecting its pid - it should be alive
-        if (ipfs.subprocess.pid === undefined)
-            return true 
-        // signal 0 throws if process is missing, noop otherwise
-        try {        
-            process.kill(ipfs.subprocess.pid, 0)
-        }
-        catch (err) {
-            return true
-        }
-        return false
-    }
-
-    public async createNode(): Promise<Controller<ControllerType>> {
+    public async createNode() {
         if (!this.factory) {
             this.factory = await this.createFactory()
         }
@@ -122,11 +103,11 @@ class IPFSNodeManager {
                 throw new Error(`Could not create repo path`)
             }
             logger.info(`New repo crated`)
-            nodeConfig = this.newConfig()
+            nodeConfig = this.newConfig(`go`)
         }
         logger.debug(`Spawning node, current number of nodes: ${this.factory.controllers.length}`)
         logger.debug(`Selected repo ${repoPath}`)
-        const ipfs = await this.factory.spawn({ type: `js`, ipfsOptions: nodeConfig })
+        const ipfs = await this.factory.spawn({ type: `go`, ipfsOptions: nodeConfig })
             .catch((err) => {
                 logger.error(`erorr spawning node`, err)
                 throw err
@@ -156,7 +137,6 @@ class IPFSNodeManager {
                 test: false,
                 remote: false,
                 ipfsHttpModule: ipfsHTTpModule,
-                // kuboRpcModule: kuboRpcModule, 
                 ipfsModule: ipfsModule, // only if you gonna spawn 'proc' controllers
             },
             {
@@ -164,10 +144,10 @@ class IPFSNodeManager {
                 js: {
                     ipfsBin: ipfsModule.path(),
                 },
-                // go: {
-                //     ipfsBin: goIpfsModule.path(),
+                go: {
+                    ipfsBin: goIPFSModule.path(),
                             
-                // },
+                },
                
             },
         )
@@ -199,7 +179,8 @@ class IPFSNodeManager {
                 logger.error(`error in node start`, err) 
                 throw err
             })
-        daemon.subprocess?.setMaxListeners(0)
+        daemon.subprocess?.setMaxListeners(Infinity)
+        logger.info(`set max listeners to infinity, current max listeners: ${daemon.subprocess?.getMaxListeners()}`)
         //restore stdout and stderr to this process stdout and stderr
         
         daemon.subprocess?.stdout?.on(`data`, (data) => {

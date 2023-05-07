@@ -55,7 +55,7 @@ const friendsCommand = program.command(`friends`)
         command.help();
     }
     if (options.add)
-        return await addKnownPeer(options.add);
+        return addKnownPeer(options.add);
     if (options.remove)
         return await removeKnownPeer(options.remove);
     if (options.list)

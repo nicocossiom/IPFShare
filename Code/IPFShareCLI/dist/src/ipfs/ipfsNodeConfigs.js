@@ -33,7 +33,7 @@ const newJsConfig = (opts) => {
         },
         Pubsub: {
             Enabled: true,
-            PubSubRouter: `gossipsub`,
+            Router: `gossipsub`,
         },
         Swarm: {
             RelayClient: {
@@ -176,15 +176,12 @@ const newGoConfig = (opts) => {
             'PublicGateways': null,
             'RootRedirect': ``
         },
-        // "Identity": {
-        //     "PeerID": "12D3KooWHN8DzeTs9s4dpULQcAbuNRi24HPQJmse7u1fgMYQjcZ8",
-        //     "PrivKey": "CAESQBoDdM0zHttB1KLdR+gt/O3nUGEXaXWzJSCWxkfOZHf1cCSgvUL+3EGg9oZNz8f97YkeZHhs1xEc4cwoG8bWFRM="
-        // },
         'Internal': {},
         'Ipns': {
             'RecordLifetime': ``,
             'RepublishPeriod': ``,
-            'ResolveCacheSize': 128
+            'ResolveCacheSize': 128,
+            "UsePubsub": true
         },
         'Migration': {
             'DownloadSources': [],
@@ -208,8 +205,9 @@ const newGoConfig = (opts) => {
             'Strategy': ``
         },
         'Pubsub': {
+            "Router": `gossipsub`,
+            "Enabled": true,
             'DisableSigning': false,
-            'Router': ``
         },
         'Reprovider': {},
         'Routing': {
@@ -221,15 +219,19 @@ const newGoConfig = (opts) => {
             'ConnMgr': {},
             'DisableBandwidthMetrics': false,
             'DisableNatPortMap': false,
-            'RelayClient': {},
-            'RelayService': {},
-            'ResourceMgr': {
-                'Limits': {}
-            },
-            'Transports': {
-                'Multiplexers': {},
-                'Network': {},
-                'Security': {}
+            'RelayClient': {
+                'AutoRelay': {
+                    'Enabled': false,
+                },
+                'RelayService': {},
+                'ResourceMgr': {
+                    'Limits': {}
+                },
+                'Transports': {
+                    'Multiplexers': {},
+                    'Network': {},
+                    'Security': {}
+                }
             }
         }
     };
