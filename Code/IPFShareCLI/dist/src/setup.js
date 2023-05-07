@@ -1,12 +1,38 @@
 import { logger } from './common/logger.js';
+import { relaunchAsDaemon } from './common/utils.js';
 import { IPFSNodeManager } from './ipfs/IPFSNodeManager.js';
 import chalk from 'chalk';
 import fs from 'fs';
 import inquirer from 'inquirer';
+import ora from 'ora';
 import os from 'os';
 import path from 'path';
-async function setAndCreateAppDataFolder() {
-    return await inquirer.prompt([
+export async function notSetupPrompt() {
+    if (!process.env.IPFSHARE_HOME) {
+        console.log(chalk.yellowBright(`IPFShare is not setup`));
+        // request user to run ipfshare setup
+        const { answer } = await inquirer.prompt([
+            {
+                name: `answer`,
+                type: `list`,
+                choices: [`Yes`, `No`],
+                message: `Would you like to setup IPFShare now?`,
+            }
+        ]);
+        if (answer === `Yes`) {
+            await setupPrompt();
+        }
+        else {
+            console.log(chalk.yellow(`Exiting`));
+            // process.exit(1)
+        }
+    }
+    // TODO check if the folder is valid for real for real
+}
+export async function setupPrompt(pathArg) {
+    if (pathArg)
+        return await setAndCreateAppDataFolder(pathArg);
+    await inquirer.prompt([
         {
             name: `answer`,
             type: `input`,
@@ -21,16 +47,26 @@ async function setAndCreateAppDataFolder() {
     }).then(async ({ answer }) => {
         if (answer === `~/.ipfshare`)
             answer = path.join(os.homedir(), `.ipfshare`);
-        if (fs.mkdirSync(answer, { recursive: true }) === undefined) {
-            console.log(`\n` + chalk.red(`Failed to create 📁 at ${`"` + answer + `"`}`) + `\n`);
-            console.log(chalk.yellow(`Please try again\n`));
-            return await setAndCreateAppDataFolder();
-        }
-        console.log(`\n` + `Created 📁 and IPFShare home set to ${chalk.italic.green(`"` + answer + `"`)}`);
-        logger.info(`dirnameee ${path.join(path.resolve(), `.env`)}`);
-        logger.info(`Application data path: ${answer}`);
-        process.env.IPFSHARE_HOME = answer;
+        const spinner = ora(chalk.bold(`🔧 Setting up IPFShare 🔧`)).start();
+        // sleep for 2 seconds
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        setTimeout(() => {
+            spinner.color = `yellow`;
+            spinner.text = chalk.bold(`📁 Creating IPFShare home folder 📁`);
+        }, 2000);
+        await setAndCreateAppDataFolder(answer);
+        spinner.stopAndPersist({ symbol: `✅`, text: chalk.bold.greenBright(`IPFShare setup done`) });
     });
+}
+async function setAndCreateAppDataFolder(setupPath) {
+    if (fs.mkdirSync(setupPath, { recursive: true }) === undefined) {
+        console.log(`\n` + chalk.red(`Failed to create 📁 at ${`"` + setupPath + `"`}`) + `\n`);
+        console.log(chalk.yellow(`Please try again\n`));
+        return await setupPrompt();
+    }
+    console.log(`\n` + `Created 📁 and IPFShare home set to ${chalk.italic.green(`"` + setupPath + `"`)}`);
+    logger.info(`Application data path: ${setupPath}`);
+    process.env.IPFSHARE_HOME = setupPath;
 }
 export async function resetup() {
     console.log(`IPFShare has already been configured at 📁${chalk.italic.green(`"` + process.env.IPFSHARE_HOME + `"`)}`);
@@ -44,7 +80,7 @@ export async function resetup() {
     ]).then(async ({ answer }) => {
         if (answer === `Yes`) {
             console.log(`Re-setting up IPFShare`);
-            await setAndCreateAppDataFolder;
+            await setAndCreateAppDataFolder(answer);
         }
         else {
             console.log(chalk.yellow(`Exiting`));
@@ -53,7 +89,7 @@ export async function resetup() {
     });
 }
 export async function daemonPromptIfNeeded() {
-    await setupPromptIfNeeded(); // just in case
+    await notSetupPrompt(); // just in case
     // check if the repo.lock file exists
     // check if any process is using port 5002
     if (await IPFSNodeManager.isDaemonRunning())
@@ -69,46 +105,8 @@ export async function daemonPromptIfNeeded() {
     ]);
     if (answer === `Yes`) {
         console.log(chalk.bold(`🔧 Starting IPFS daemon 🔧`));
-        await IPFSNodeManager.startDaemon();
-        console.log(`\n` + `✅ ${chalk.greenBright(`IPFS daemon started`)}` + `\n`);
+        await relaunchAsDaemon();
+        console.log(`\n✅ ${chalk.greenBright(`IPFS daemon started`)}\n`);
     }
 }
-export async function setupPromptIfNeeded() {
-    if (!process.env.IPFSHARE_HOME) {
-        console.log(chalk.yellowBright(`IPFShare is not setup`));
-        // request user to run ipfshare setup
-        const { answer } = await inquirer.prompt([
-            {
-                name: `answer`,
-                type: `list`,
-                choices: [`Yes`, `No`],
-                message: `Would you like to setup IPFShare now?`,
-            }
-        ]);
-        if (answer === `Yes`) {
-            console.log(chalk.bold(`🔧 Setting up IPFShare 🔧`));
-            await setAndCreateAppDataFolder().catch((err) => { console.error(`Error setting up IPFShare`, err); });
-            console.log(`\n` + `✅ ${chalk.greenBright(`IPFShare setup complete`)}` + `\n`);
-        }
-        else {
-            console.log(chalk.yellow(`Exiting`));
-            // process.exit(1)
-        }
-    }
-    // TODO check if the folder is valid for real for real
-}
-async function startIPFSManager() {
-    const manager = new IPFSNodeManager();
-    return await manager.createNode();
-}
-// export async function initialSetup() {
-//     if (!process.env.IPFSHARE_HOME)
-//         throw new Error(`IPFShare home not set`)
-//     addLoggerFileTransportsAfterHomeSet()
-//     const node = await startIPFSManager()
-//     if (!isSetup) 
-//         isSetup = true
-//     // relaunch this process
-//     return node
-// }
 //# sourceMappingURL=setup.js.map

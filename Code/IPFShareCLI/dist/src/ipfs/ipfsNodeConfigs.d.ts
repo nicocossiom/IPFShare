@@ -3,7 +3,7 @@ interface IpfsNodeConfigOptions {
     gateawayPort: number;
     swarmPort: number;
 }
-export declare function newNodeConfig(type?: 'go' | 'js', options?: IpfsNodeConfigOptions): {
+export declare function newNodeConfig(type?: `go` | `js`, options?: IpfsNodeConfigOptions): {
     API: {
         HTTPHeaders: {};
     };
@@ -143,6 +143,16 @@ export declare function newNodeConfig(type?: 'go' | 'js', options?: IpfsNodeConf
         Enabled: boolean;
         PubSubRouter: string;
     };
+    Swarm: {
+        RelayClient: {
+            Enabled: boolean;
+        };
+        ConnMgr: {
+            LowWater: number;
+            HighWater: number;
+        };
+        DisableNatPortMap: boolean;
+    };
     Discovery: {
         MDNS: {
             Enabled: boolean;
@@ -154,9 +164,8 @@ export declare function newNodeConfig(type?: 'go' | 'js', options?: IpfsNodeConf
     };
     API: {
         HTTPHeaders: {
-            'Access-Control-Allow-Origin': string[];
-            'Access-Control-Allow-Methods': string[];
-            'Access-Control-Allow-Credentials': string[];
+            "Access-Control-Allow-Origin": string[];
+            "Access-Control-Allow-Methods": string[];
         };
     };
     EXPERIMENTAL: {

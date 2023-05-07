@@ -1,4 +1,4 @@
-// import { initialSetup } from './setup.js'
-import { program } from './cli.js';
-program.parse(process.argv);
+import { program } from "./cli.js";
+export const ctx = { manager: undefined, orbitdb: undefined };
+await program.parseAsync(process.argv);
 //# sourceMappingURL=index.js.map

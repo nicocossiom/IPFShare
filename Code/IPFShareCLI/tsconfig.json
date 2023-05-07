@@ -25,6 +25,10 @@
         "./src/ipfs/*",
         "./dist/src/ipfs/*"
       ],
+      "@types/*": [
+        "./src/types/*",
+        "./dist/src/types/*"
+      ],
     },
     "noEmit": false,
     "noEmitOnError": true,

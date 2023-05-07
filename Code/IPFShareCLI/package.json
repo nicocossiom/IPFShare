@@ -8,7 +8,7 @@
   },
   "type": "module",
   "scripts": {
-    "start": "node dist/src/index.js",
+    "start": "node -r source-map-support/register dist/src/index.js",
     "watch": "concurrently --kill othgers \"tsc -w\" \"tsc-alias -w\" ",
     "build": "tsc && tsc-alias",
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -17,6 +17,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@commander-js/extra-typings": "github:commander-js/extra-typings",
     "@types/figlet": "^1.5.6",
     "chalk": "^5.2.0",
     "commander": "^10.0.1",
@@ -27,7 +28,9 @@
     "ipfs-http-client": "^60.0.0",
     "ipfsd-ctl": "^13.0.0",
     "kubo-rpc-client": "^3.0.1",
+    "ora": "^6.3.0",
     "orbit-db": "^0.29.0",
+    "ps-list": "^8.1.1",
     "winston": "^3.8.2"
   },
   "devDependencies": {
@@ -39,7 +42,10 @@
     "concurrently": "^8.0.1",
     "dotenv": "^16.0.3",
     "eslint": "^8.39.0",
+    "source-map-support": "^0.5.21",
+    "ts-node": "^10.9.1",
     "tsc-alias": "^1.8.6",
+    "tslib": "^2.5.0",
     "typescript": "^5.0.4"
   }
 }

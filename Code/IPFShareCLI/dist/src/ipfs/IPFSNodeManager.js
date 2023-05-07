@@ -1,17 +1,15 @@
 // import { mdns } from '@libp2p/mdns'
 // import { tcp } from '@libp2p/tcp'
-import { logger } from '../common/logger.js';
+// import { DaemonCommandOptions } from '../cli.js'
 import { isPortInUse } from '../common/utils.js';
+import { logger } from '../common/logger.js';
+import { newNodeConfig } from './ipfsNodeConfigs.js';
+import fs from 'fs';
 import * as ipfsModule from 'ipfs';
 import * as ipfsHTTpModule from 'ipfs-http-client';
 import * as Ctl from 'ipfsd-ctl';
-import * as kuboRpcModule from 'kubo-rpc-client';
 import path from 'node:path';
-// import { Libp2pOptions } from 'libp2p'
-// import { goIpfsModule, ipfsHTTpModule, ipfsd } from '@app/ipfs/exporter.js'
-import { newNodeConfig } from './ipfsNodeConfigs.js';
-import fs from 'fs';
-import assert from 'node:assert';
+import psList from 'ps-list';
 const goIpfsModule = await import(`go-ipfs`);
 // function libp2pConfig() {
 //     /** @type { */
@@ -43,7 +41,7 @@ class IPFSNodeManager {
     apiPort = 5002;
     swarmPort = 4002;
     gatewayPort = 8090;
-    getRepoPath() {
+    static getRepoPath() {
         if (process.env.IPFSHARE_HOME === undefined) {
             throw new Error(`IPFSHARE_HOME is not defined`);
         }
@@ -62,13 +60,13 @@ class IPFSNodeManager {
             : goIPFSRepo;
         return repo;
     }
-    newConfig(type = `go`) {
+    newConfig(type = `js`) {
         if (process.env.IPFSHARE_HOME === undefined) {
             throw new Error(`IPFSHARE_HOME is not defined`);
         }
         const config = newNodeConfig(type, { apiPort: this.apiPort, swarmPort: this.swarmPort, gateawayPort: this.gatewayPort });
         const ipfsBaseOptions = {
-            repo: this.getRepoPath(),
+            repo: IPFSNodeManager.getRepoPath(),
             config: config,
             init: {
                 allowNew: true,
@@ -80,7 +78,7 @@ class IPFSNodeManager {
         this.currentConfig = ipfsBaseOptions;
         return ipfsBaseOptions;
     }
-    // taken from https://github.com/ipfs/ipfs-desktop/blob/main/src/daemon/daemon.js
+    // credit:  https://github.com/ipfs/ipfs-desktop/blob/main/src/daemon/daemon.js
     isSpawnedDaemonDead(ipfs) {
         console.log(`isSpawnedDaemonDead`);
         if (ipfs.subprocess === undefined || ipfs.subprocess === null || ipfs.subprocess.exitCode != null)
@@ -102,7 +100,7 @@ class IPFSNodeManager {
         if (!this.factory) {
             this.factory = await this.createFactory();
         }
-        const repoPath = this.getRepoPath();
+        const repoPath = IPFSNodeManager.getRepoPath();
         let nodeConfig = { repo: repoPath };
         const initializing = !fs.existsSync(repoPath);
         if (initializing) {
@@ -115,7 +113,7 @@ class IPFSNodeManager {
         }
         logger.debug(`Spawning node, current number of nodes: ${this.factory.controllers.length}`);
         logger.debug(`Selected repo ${repoPath}`);
-        const ipfs = await this.factory.spawn({ type: `go`, ipfsOptions: nodeConfig })
+        const ipfs = await this.factory.spawn({ type: `js`, ipfsOptions: nodeConfig })
             .catch((err) => {
             logger.error(`erorr spawning node`, err);
             throw err;
@@ -124,29 +122,7 @@ class IPFSNodeManager {
             logger.error(`error in node init`, err);
             throw err;
         });
-        console.log(ipfs);
-        await ipfs.start()
-            .catch((err) => {
-            logger.error(`error in node start`, err);
-            throw err;
-        });
-        // ipfs.subprocess?.unref()
-        logger.debug(`'Node started with pid ${ipfs.subprocess?.pid}`);
-        // handle sigkill
-        //catch sigkill
-        process.on(`SIGINT`, async () => {
-            console.log(`SIGINT received`);
-            await ipfs.stop();
-            fs.rmSync(path.join(repoPath, `api`), { force: true });
-            process.exit(0);
-        });
         return ipfs;
-    }
-    stopListeningDaemon(ipfs) {
-        if (this.isSpawnedDaemonDead(ipfs))
-            throw new Error(`Spawned daemon is dead`);
-        assert(ipfs.subprocess !== undefined && ipfs.subprocess !== null, `Spawned daemon subprocess is undefined or null`);
-        // stop listening to spawned daemon
     }
     async createIPFSNode() {
         return await ipfsModule.create(this.nodes.length > 0 ? this.newConfig().config : this.currentConfig).then((node) => {
@@ -157,24 +133,21 @@ class IPFSNodeManager {
     }
     async createFactory() {
         return Ctl.createFactory({
-            type: `go`,
+            type: `js`,
             disposable: false,
             test: false,
             remote: false,
             ipfsHttpModule: ipfsHTTpModule,
-            kuboRpcModule: kuboRpcModule,
+            // kuboRpcModule: kuboRpcModule, 
             ipfsModule: ipfsModule, // only if you gonna spawn 'proc' controllers
         }, {
             // overrides per type
             js: {
                 ipfsBin: ipfsModule.path(),
             },
-            go: {
-                ipfsBin: goIpfsModule.path(),
-            },
-            proc: {
-                ipfsClientModule: ipfsModule.path(),
-            }
+            // go: {
+            //     ipfsBin: goIpfsModule.path(),
+            // },
         });
     }
     static async isDaemonRunning() {
@@ -183,26 +156,54 @@ class IPFSNodeManager {
         }
         const repoLockPath = path.join(process.env.IPFSHARE_HOME, `ipfsRepo`, `repo.lock`);
         const apiFilePath = path.join(process.env.IPFSHARE_HOME, `ipfsRepo`, `api`);
-        // apiFilePath contains a line like this one: /ip4/127.0.0.1/tcp/5001
-        const portMatch = fs.readFileSync(apiFilePath).toString().match(/(\d+)(?!.*\d)/); // port 
-        if (portMatch === null)
+        try {
+            // apiFilePath contains a line like this one: /ip4/127.0.0.1/tcp/5001
+            const portMatch = fs.readFileSync(apiFilePath).toString().match(/(\d+)(?!.*\d)/); // port 
+            if (portMatch === null)
+                return false;
+            const apiPort = parseInt(portMatch[0]);
+            fs.existsSync(repoLockPath) && await isPortInUse(apiPort);
+        }
+        catch (error) {
             return false;
-        const apiPort = parseInt(portMatch[0]);
-        return fs.existsSync(repoLockPath) && await isPortInUse(apiPort);
+        }
+        return true;
     }
-    static async startDaemon() {
-        throw new Error(`Not implemented`);
-        // if (process.env.IPFSHARE_HOME === undefined) {
-        //     throw new Error(`Setup was run but IPFShare home is not set`)
-        // }
-        // const repoLockPath = path.join(process.env.IPFSHARE_HOME, `ipfsRepo`, `repo.lock`)
+    async startDaemon() {
+        const daemon = await this.createNode();
+        await daemon.start()
+            .catch((err) => {
+            logger.error(`error in node start`, err);
+            throw err;
+        });
+        daemon.subprocess?.setMaxListeners(0);
+        //restore stdout and stderr to this process stdout and stderr
+        daemon.subprocess?.stdout?.on(`data`, (data) => {
+            console.log(data.toString());
+        });
+        daemon.subprocess?.stderr?.on(`data`, (data) => {
+            console.log(data.toString());
+        });
+        logger.debug(`IPFS Daemon started with pid ${daemon.subprocess?.pid}`);
+        // get the daemon.subprocess stdout and stderr
+        // make the subprocess stdout and stderr available to the main process
+        process.on(`SIGINT`, async () => {
+            logger.info(`Killing daemon`);
+            await daemon.stop();
+            fs.rmSync(path.join(IPFSNodeManager.getRepoPath(), `api`), { force: true });
+            process.exit(0);
+        });
     }
     static async stopDaemon() {
-        throw new Error(`Not implemented`);
-        // if (process.env.IPFSHARE_HOME === undefined) {
-        //     throw new Error(`Setup was run but IPFShare home is not set`)
-        // }
-        // const repoLockPath = path.join(process.env.IPFSHARE_HOME, `ipfsRepo`, `repo.lock`)
+        // get the pid of the daemon
+        const pid = await psList().then((list) => {
+            const daemon = list.find((someProcess) => someProcess.name.includes(`node_modules/go-ipfs/bin/ipfs`));
+            if (daemon === undefined)
+                throw new Error(`Daemon not found`);
+            return daemon.pid;
+        });
+        // kill the daemon
+        process.kill(pid);
     }
 }
 export { IPFSNodeManager };

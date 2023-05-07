@@ -4,3 +4,5 @@
  * @returns {Promise<boolean>} A promise that resolves to `true` if the port is in use, `false` otherwise.
  */
 export declare const isPortInUse: (port: number) => Promise<boolean>;
+export declare function initializeContext(): Promise<void>;
+export declare function relaunchAsDaemon(): Promise<void>;
