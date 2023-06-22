@@ -4,17 +4,19 @@ import { initializeContext } from "./common/utils.js"
 import { ctx } from "./index.js"
 import { getOrbitDB } from "./orbitdb.js"
 
-type PeerDocument = { peerId: string , alias: string}
+type PeerDocument = { peerId: string, alias: string }
 
-function parsePeersForAliases(peers: string[]){
+function parsePeersForAliases(peers: string[]) {
     const parsedPeers = []
     for (const peer of peers) {
         const [peerId, alias] = peer.split(`:`)
         if (!peerId || !alias) throw new Error(`Invalid peer format: ${peer}`)
-        parsedPeers.push({peerId, alias})
+        parsedPeers.push({ peerId, alias })
     }
     return parsedPeers
 }
+
+
 
 export async function addKnownPeer(peers: string[]) {
     logger.info(`Adding peers ${peers}`)
@@ -23,7 +25,7 @@ export async function addKnownPeer(peers: string[]) {
     const orbit = ctx.orbitdb ?? await getOrbitDB()
     const peersDB = await orbit.keyvalue<PeerDocument>(`friends`)
     await peersDB.load()
-    for (const {peerId, alias} of parsedPeers) {
+    for (const { peerId, alias } of parsedPeers) {
         const res = await peersDB.put(alias, { peerId, alias })
         console.log(chalk.green(`Added ${alias} with peerId ${peerId}`))
         logger.debug(`transaction result ${res}`)
@@ -36,7 +38,7 @@ export async function removeKnownPeer(peers: string[]) {
     const peersDB = await orbit.keyvalue<PeerDocument>(`friends`)
     await peersDB.load()
     const parsedPeers = parsePeersForAliases(peers)
-    for (const {peerId, alias} of parsedPeers) {
+    for (const { peerId, alias } of parsedPeers) {
         await peersDB.del(alias, {})
     }
 }
@@ -49,4 +51,3 @@ export async function listFriends() {
     // for each peer, print the alias and peerId
     console.log(peers)
 }
-

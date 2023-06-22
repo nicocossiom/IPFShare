@@ -5,8 +5,7 @@ import chalk from 'chalk'
 import fs from 'fs'
 import inquirer from 'inquirer'
 import ora from 'ora'
-import os from 'os'
-import path from 'path'
+import { env } from 'process'
 
 
 export async function notSetupPrompt() {
@@ -43,15 +42,13 @@ export async function setupPrompt(pathArg?: string) {
             message: `Where would you like to store your IPFShare config?`,
             prefix: `📁`,
             suffix: `  ⏎ for`,
-            default: `~/.ipfshare`
+            default: `${env.HOME}/.ipfshare`
         }
     ]).catch((err) => {
         console.log(chalk.red(err))
         throw err
     }).then(async ({ answer }: { answer: string }) => {
-        if (answer === `~/.ipfshare`)
-            answer = path.join(os.homedir(), `.ipfshare`)
-        const spinner = ora(chalk.bold(`🔧 Setting up IPFShare 🔧`)).start()
+        const spinner = ora(chalk.bold(`🔧 Setting up IPFShare in ${answer}🔧`)).start()
         // sleep for 2 seconds
         await new Promise(resolve => setTimeout(resolve, 2000))
         setTimeout(() => {

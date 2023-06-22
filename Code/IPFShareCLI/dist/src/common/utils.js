@@ -1,6 +1,7 @@
 // import { DaemonCommandOptions } from '../cli.js'
 import { ctx } from '../index.js';
 import { IPFSNodeManager } from '../ipfs/IPFSNodeManager.js';
+import { DagOperator } from '../ipfs/dagOperations.js';
 import { getOrbitDB } from '../orbitdb.js';
 import { logger } from './logger.js';
 import fs from 'fs';
@@ -29,7 +30,35 @@ export async function initializeContext() {
         (await ipfs).start();
         ctx.ipfs = ipfs;
         ctx.orbitdb = await getOrbitDB();
+        ctx.dagOperator = await new DagOperator().create();
     }
+}
+function isDirectorySync(path) {
+    try {
+        const stats = fs.statSync(path);
+        return stats.isDirectory();
+    }
+    catch (err) {
+        logger.error(err);
+        throw err;
+    }
+}
+export function getBuffersFromFiles(paths) {
+    if (!paths.length)
+        throw new Error(`No files provided`);
+    const bufferMap = new Map();
+    for (const path of paths) {
+        if (fs.existsSync(path)) {
+            //check if the path is a directory, if it is, get all the files in it
+            if (!isDirectorySync(path)) {
+                const buffer = fs.readFileSync(path);
+                bufferMap.set(path, buffer);
+                continue;
+            }
+            throw new Error(`Path ${path} is a directory, directories are not supported yet`);
+        }
+    }
+    return bufferMap;
 }
 export async function relaunchAsDaemon() {
     if (!process.argv[0] || !process.argv[1])

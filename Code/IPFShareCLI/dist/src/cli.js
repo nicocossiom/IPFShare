@@ -1,8 +1,10 @@
+import { ctx } from './index.js';
 import { daemonPromptIfNeeded, notSetupPrompt, setupPrompt } from './setup.js';
 import { Command, Option } from '@commander-js/extra-typings';
 import { IPFSNodeManager } from './ipfs/IPFSNodeManager.js';
 import chalk from 'chalk';
 import figlet from 'figlet';
+import { getBuffersFromFiles, initializeContext } from './common/utils.js';
 import { addKnownPeer, listFriends, removeKnownPeer } from './friends.js';
 chalk.level = 3;
 const logo = figlet.textSync(`IPFShare`, { font: `Georgia11`, horizontalLayout: `default`, verticalLayout: `default` });
@@ -22,9 +24,9 @@ program
     program.help();
 });
 // TODO add more description
-const setupCommand = program.command(`setup`)
+program.command(`setup`)
     .summary(`Run initial setup`)
-    .description(`Runs the initial setup: 
+    .description(`Runs the initial setup:
     - Creates IPFShare home folder. This is where all files/folders program related are located
     - Generate the IPFS repository and config
     - Generates encryption keys
@@ -43,6 +45,21 @@ const daemonCommand = program.command(`daemon`)
     const manager = new IPFSNodeManager();
     await manager.startDaemon();
 });
+program.command(`share`)
+    .summary(`Upload a file or folder`)
+    .description(`Uploads a file or folder to IPFS. The file or folder is encrypted and uploaded to IPFS. The hash is then added to the user's IPFShare index.`)
+    .argument(`[path...]`, `Path to file or folder to upload`)
+    .action(async (path) => {
+    // if empty path array
+    if (!path || path.length === 0) {
+        program.help();
+    }
+    await initializeContext();
+    if (!ctx.dagOperator)
+        throw new Error(`DAG Operator not initialized`);
+    const bufferMap = getBuffersFromFiles(path);
+    ctx.dagOperator.addEncryptedObject(Object.fromEntries(bufferMap), [ctx.dagOperator.did.id]);
+});
 const friendsCommand = program.command(`friends`)
     .summary(`Manage friends`)
     .description(`Manage friends. Friends are other IPFShare users that you have added. You can add, remove, and list friends.`)
@@ -50,7 +67,7 @@ const friendsCommand = program.command(`friends`)
     .addOption(new Option(`-rm, --remove <friends...>`, `Remove friends`))
     .addOption(new Option(`-l, --list`, `List friends`))
     .action(async (options, command) => {
-    // if empty options object 
+    // if empty options object
     if (!options || Object.keys(options).length === 0) {
         command.help();
     }
@@ -60,6 +77,15 @@ const friendsCommand = program.command(`friends`)
         return await removeKnownPeer(options.remove);
     if (options.list)
         return await listFriends();
+});
+program.command(`info`)
+    .summary(`Provides information about the running ipfshare instance such as DID and peerID`)
+    .action(async () => {
+    await initializeContext();
+    if (!ctx.dagOperator)
+        throw new Error(`DAG Operator not initialized`);
+    console.log(`DID: ${ctx.dagOperator.did.id}`);
+    console.log(`PeerID: ${ctx.ipfs?.peer.id}`);
 });
 export { program };
 //# sourceMappingURL=cli.js.map

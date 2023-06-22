@@ -1,0 +1,25 @@
+Estoy desarrollando una herramienta de interfaz de línea de comandos (CLI) para compartir archivos cifrados, basada en el Sistema de Archivos Interplanetario (IPFS) y construida con NodeJS. La herramienta, llamada 'ipfshare', puede ser instalada a través de NPM (Node Package Manager).
+
+En la primera ejecución, 'ipfshare' crea un repositorio IPFS separado con una configuración personalizada y lanza automáticamente un demonio de IPFS que se ejecuta en segundo plano. La herramienta se comunica con el demonio de Kubo a través de RPC utilizando la API estándar de IPFS para todas las ejecuciones de comandos.
+
+Durante la fase de configuración, se genera un DID para el nodo, actuando como el principal mecanismo para el cifrado y descifrado, y se asocia con el usuario. El proveedor de DID que estoy utilizando es Ed25519Provider, que crea un DID a partir de una semilla de 32 bytes (que actualmente no es aleatoria, pero lo será).
+
+Después de crear el DID, se sube a un registro global alojado por una base de datos de clave-valor OrbitDB existente, cuya dirección está codificada en duro y se conoce de antemano.
+
+La compartición de archivos en 'ipfshare' funciona de la siguiente manera:
+
+Cualquier usuario que ejecute esta aplicación y tenga un DID asociado en el registro global puede agregar a un "amigo" (un usuario de confianza con el que desean compartir archivos) usando el comando `ipfs add friend <friendPeerId>`. Este comando recupera el DID del amigo del registro global y lo almacena localmente para su uso futuro.
+
+Compartir un archivo implica cifrarlo con los DIDs del destinatario, creando un JWE cifrado en el formato dag-jose. Este JWE cifrado se enlaza a una dirección IPNS a través de un hash para facilitar su compartición. Por lo tanto, un comando como `ipfshare download <sharedIpnsAddress>` fallará o tendrá éxito, lo que desencadenará el descifrado del archivo y solicitará al usuario la ubicación y el nombre del archivo para guardar.
+
+El control de acceso también está incorporado en el sistema. Por ejemplo, si el archivo 'X' se comparte con los usuarios B, C y D, y más tarde decidimos incluir a los usuarios H, L y eliminar al usuario D, simplemente podemos volver a cifrar el archivo 'X' con la nueva lista de DIDs para los destinatarios previstos. Este proceso genera un nuevo hash enlazado a la dirección IPNS original, actualizando efectivamente la lista de control de acceso.
+
+Si bien el contenido antiguo del archivo 'X' sigue siendo accesible (si está anclado o no ha sido recogido por el recolector de basura), esto se considera un atributo inherente de IPFS. Una vez que se concede el acceso, no se puede revocar para las versiones anteriores, aunque se puede negar para las nuevas.
+
+Inicialmente, consideré construir esto como una aplicación Electron, pero debido a la carga de trabajo significativa, decidí seguir con un enfoque basado en CLI.
+
+El principal desafío al que me enfrento es la planeada depreciación de IPFS pubsub por parte del equipo de Kubo. Aunque recomiendan el uso de go-libp2p-pubsub, reescribir mi código TypeScript en Go no es factible. Una alternativa es cambiar a js-ipfs como el nodo ipfs y usar su pubsub. Sin embargo, por alguna razón, las bases de datos OrbitDB no funcionan bien con js-ipfs, lo que lleva a un error de "peers insuficientes". Por eso cambié a Kubo, que fue una transición fácil con ipfsd-ctl para la creación de nodos. Una opción potencialmente ideal sería migrar a Helia, la nueva implementación de js IPFS, pero eso depende de la implementación de OrbitDB para Helia, que aún no se ha incluido upstream. Por ahora, he decidido esperar para implementar esta característica hasta que decida un enfoque.
+
+Sé que tener una base de datos OrbitDB para almacenar el DID de un usuario es algo innecesario, ya que en lugar de añadir a un amigo como un peerId podríamos usar el DID en su lugar. Lo que pasa es que en el futuro quiero ampliar el concepto de "registro" donde se puedan crear más registros con campos de entrada personalizados donde, por ejemplo, la clave podría ser un nombre de usuario y el DID un valor, creando así diferentes tipos de registros.
+
+Quizás debería abandonar esta idea de Registro y simplemente usar pubsub para obtener DIDs o algo así, no lo sé.
