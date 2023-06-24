@@ -1,26 +1,21 @@
 FROM node:18
-# switch to bash
+
+# use bash instead of sh
 SHELL ["/bin/bash", "-c"]
-RUN apt-get update && apt-get install openssh-client
-# Install pnpm
-RUN npm install -g pnpm
-RUN mkdir -p -m 0600 ~/.ssh && ssh-keyscan github.com >> ~/.ssh/known_hosts
-# Clone the repository
-RUN git clone https://github.com/nicocossiom/IPFShare.git /app
 
-# Set the working directory
-WORKDIR /app/Code/IPFShareCLI
+# Create a new directory for the app
+WORKDIR /app/
 
-# Remove existing pnpm lock file if present
-RUN rm pnpm-lock.yaml
+# Copy the rest of the app's source code
+COPY . .
 
 # Install dependencies using pnpm
-RUN pnpm install
+RUN yarn install
 
-# Build the project
-RUN pnpm run build
+RUN yarn build
 
-# Install the application globally
-RUN pnpm install . -g
+RUN yarn run build
 
-CMD ["pnpm", "start"]
+RUN yarn start setup /app/ipfshare
+ENV IPFSHARE_HOME=/app/ipfshare
+CMD /bin/bash

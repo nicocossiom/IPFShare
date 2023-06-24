@@ -1,45 +1,51 @@
 import { logger } from '../common/logger.js';
 import { ctx } from '../index.js';
-import { createHash } from 'crypto';
-import { DID } from 'dids';
-import { Ed25519Provider } from 'key-did-provider-ed25519';
-import KeyResolver from 'key-did-resolver';
+export function traverseShareable(shareable, indent = ``) {
+    const entries = [];
+    for (const [key, value] of shareable.entries()) {
+        if (value instanceof Buffer) {
+            entries.push(key);
+        }
+        else {
+            entries.push({ [key]: traverseDirectory(value) });
+        }
+    }
+}
+function traverseDirectory(directory) {
+    const entries = [];
+    if (directory.files) {
+        const files = new Map(Object.entries(directory.files));
+        for (const [fileName, _buffer] of files.entries()) {
+            entries.push(fileName);
+        }
+    }
+    if (directory.directories) {
+        for (const [dirKey, dirValue] of directory.directories.entries()) {
+            entries.push({ [dirKey]: traverseDirectory(dirValue) });
+        }
+    }
+    return entries;
+}
 export class DagOperator {
-    did = undefined;
-    async create() {
-        this.did = await this.createDidAndAuth();
-        return this;
-    }
-    async createDidAndAuth() {
-        if (!ctx.ipfs?.api)
-            throw new Error(`IPFS not initialized`);
-        const peerId = await ctx.ipfs.peer.id.toBytes();
-        const seed = createHash(`sha256`).update(peerId).digest();
-        const provider = new Ed25519Provider(seed);
-        const did = new DID({ provider, resolver: KeyResolver.getResolver() });
-        const auth_did = await did.authenticate()
-            .catch(err => {
-            throw new Error(`Failed to authenticate DID ${err}}`);
-        });
-        logger.info(`DID authenticated: ${auth_did}`);
-        return did;
-    }
-    async addEncryptedObject(cleartext, dids) {
-        if (!this.did)
+    static async addEncryptedObject(cleartext, dids) {
+        if (!ctx.did)
             throw new Error(`DID not initialized`);
         if (!ctx.ipfs?.api)
             throw new Error(`IPFS not initialized`);
-        const jwe = await this.did.createDagJWE(cleartext, dids);
-        return ctx.ipfs.api.dag.put(jwe, { storeCodec: `dag-jose`, hashAlg: `sha2-256` });
+        const jwe = await ctx.did.createDagJWE(cleartext, dids);
+        logger.debug(`JWE: ${JSON.stringify(jwe)}`);
+        const dagCID = await ctx.ipfs.api.dag.put(jwe, { storeCodec: `dag-jose`, hashAlg: `sha2-256` });
+        console.log(`DAG CID: ${dagCID}`);
     }
-    async getEnctrypedObject(cid) {
-        if (!this.did)
+    static async getEnctrypedObject(cid) {
+        if (!ctx.did)
             throw new Error(`DID not initialized`);
         if (!ctx.ipfs)
             throw new Error(`IPFS not initialized`);
         const jwe = (await ctx.ipfs.api.dag.get(cid)).value;
-        const cleartext = await this.did?.decryptDagJWE(jwe);
-        return cleartext;
+        const shareable = await ctx.did?.decryptDagJWE(jwe);
+        const shareableMap = new Map(Object.entries(shareable));
+        return shareableMap;
     }
 }
 //# sourceMappingURL=dagOperations.js.map

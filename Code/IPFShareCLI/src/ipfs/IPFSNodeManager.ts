@@ -5,6 +5,8 @@ import { isPortInUse } from '@app/common/utils.js'
 import { logger } from '@common/logger.js'
 import { newNodeConfig } from '@ipfs/ipfsNodeConfigs.js'
 import fs from 'fs'
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
 import * as goIPFSModule from 'go-ipfs'
 import * as ipfsModule from 'ipfs'
 import { IPFS } from 'ipfs'
@@ -96,8 +98,7 @@ class IPFSNodeManager {
         const repoPath = IPFSNodeManager.getRepoPath()
         
         let nodeConfig: IPFSOptions = { repo: repoPath}
-        const initializing = !fs.existsSync(repoPath)
-        if (initializing) {
+        if (!fs.existsSync(repoPath)) {
             fs.mkdirSync(repoPath)
             if (!fs.existsSync(repoPath)) {
                 throw new Error(`Could not create repo path`)
@@ -107,7 +108,7 @@ class IPFSNodeManager {
         }
         logger.debug(`Spawning node, current number of nodes: ${this.factory.controllers.length}`)
         logger.debug(`Selected repo ${repoPath}`)
-        const ipfs = await this.factory.spawn({ type: `go`, ipfsOptions: nodeConfig })
+        const ipfs = await this.factory.spawn({ type: `go`, ipfsOptions: nodeConfig,  })
             .catch((err) => {
                 logger.error(`erorr spawning node`, err)
                 throw err
@@ -115,8 +116,7 @@ class IPFSNodeManager {
         await ipfs.init().catch((err) => {
             logger.error(`error in node init`, err)
             throw err
-        })
-        
+        })        
         return ipfs
     }
 
@@ -132,7 +132,7 @@ class IPFSNodeManager {
         
         return Ctl.createFactory(
             {
-                type: `js`, // default type, can be overridden per spawn
+                type: `go`, // default type, can be overridden per spawn
                 disposable: false,
                 test: false,
                 remote: false,
@@ -146,7 +146,6 @@ class IPFSNodeManager {
                 },
                 go: {
                     ipfsBin: goIPFSModule.path(),
-                            
                 },
                
             },
@@ -165,39 +164,41 @@ class IPFSNodeManager {
             const portMatch = fs.readFileSync(apiFilePath).toString().match(/(\d+)(?!.*\d)/) // port 
             if (portMatch === null) return false
             const apiPort = parseInt(portMatch[0])
-            fs.existsSync(repoLockPath) && await isPortInUse(apiPort)
+            return fs.existsSync(repoLockPath) && await isPortInUse(apiPort)
         } catch (error) {
             return false
         }
-        return true
     }
 
     public async startDaemon(): Promise<void> {
-        const daemon = await this.createNode()
-        await daemon.start()
+        let daemon = await this.createNode()
+        daemon = await daemon.start()
             .catch((err) => { 
-                logger.error(`error in node start`, err) 
-                throw err
+                logger.error(`Error launching daemon`, err) 
+                process.exit(1)
             })
+        daemon.subprocess?.stdout?.pipe(process.stdout)
+        daemon.subprocess?.stderr?.pipe(process.stderr)
         daemon.subprocess?.setMaxListeners(Infinity)
         logger.info(`set max listeners to infinity, current max listeners: ${daemon.subprocess?.getMaxListeners()}`)
-        //restore stdout and stderr to this process stdout and stderr
-        
-        daemon.subprocess?.stdout?.on(`data`, (data) => {
-            console.log(data.toString())
-        })
-        daemon.subprocess?.stderr?.on(`data`, (data) => {
-            console.log(data.toString())
-        })
         logger.debug(`IPFS Daemon started with pid ${daemon.subprocess?.pid}`)        
-        // get the daemon.subprocess stdout and stderr
-        // make the subprocess stdout and stderr available to the main process
        
-        process.on(`SIGINT`, async () => {
-            logger.info(`Killing daemon`)
-            await daemon.stop()
-            fs.rmSync(path.join(IPFSNodeManager.getRepoPath(), `api`), {force:true})
-            process.exit(0)
+        process.on(`SIGINT`, () => {
+            (async () => {
+                logger.info(`Killing daemon`)
+                await daemon.stop()
+                fs.rmSync(path.join(IPFSNodeManager.getRepoPath(), `api`), {force:true})
+                process.exit(0)
+            })()
+        })
+
+        process.on(`beforeExit`, () => {
+            (async () => {
+                logger.info(`Daemon exiting`)
+                await daemon.stop()
+                fs.rmSync(path.join(IPFSNodeManager.getRepoPath(), `api`), {force:true})
+                process.exit(0)
+            })()
         })
         
     }
@@ -208,9 +209,15 @@ class IPFSNodeManager {
         // get the pid of the daemon
         const pid = await psList().then((list) => {
             const daemon = list.find((someProcess) => someProcess.name.includes(`node_modules/go-ipfs/bin/ipfs`))
-            if (daemon === undefined) throw new Error(`Daemon not found`)
+            if (daemon === undefined) {
+                return undefined 
+            }
             return daemon.pid
         })
+        if (pid === undefined) {
+            console.error(`Could not find daemon`)
+            return
+        }
         // kill the daemon
         process.kill(pid)
     }

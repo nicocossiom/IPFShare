@@ -1,1 +1,1 @@
-declare module 'go-ipfs';
+declare module `go-ipfs`

@@ -30,7 +30,7 @@ export async function notSetupPrompt() {
 }
 export async function setupPrompt(pathArg) {
     if (pathArg)
-        return await setAndCreateAppDataFolder(pathArg);
+        return setAndCreateAppDataFolder(pathArg);
     await inquirer.prompt([
         {
             name: `answer`,
@@ -51,15 +51,15 @@ export async function setupPrompt(pathArg) {
             spinner.color = `yellow`;
             spinner.text = chalk.bold(`📁 Creating IPFShare home folder 📁`);
         }, 2000);
-        await setAndCreateAppDataFolder(answer);
+        setAndCreateAppDataFolder(answer);
         spinner.stopAndPersist({ symbol: `✅`, text: chalk.bold.greenBright(`IPFShare setup done`) });
     });
 }
-async function setAndCreateAppDataFolder(setupPath) {
+function setAndCreateAppDataFolder(setupPath) {
     if (fs.mkdirSync(setupPath, { recursive: true }) === undefined) {
         console.log(`\n` + chalk.red(`Failed to create 📁 at ${`"` + setupPath + `"`}`) + `\n`);
         console.log(chalk.yellow(`Please try again\n`));
-        return await setupPrompt();
+        return;
     }
     console.log(`\n` + `Created 📁 and IPFShare home set to ${chalk.italic.green(`"` + setupPath + `"`)}`);
     logger.info(`Application data path: ${setupPath}`);
@@ -77,7 +77,7 @@ export async function resetup() {
     ]).then(async ({ answer }) => {
         if (answer === `Yes`) {
             console.log(`Re-setting up IPFShare`);
-            await setAndCreateAppDataFolder(answer);
+            setAndCreateAppDataFolder(answer);
         }
         else {
             console.log(chalk.yellow(`Exiting`));

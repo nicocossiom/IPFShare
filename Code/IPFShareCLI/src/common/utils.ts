@@ -1,12 +1,14 @@
 // import { DaemonCommandOptions } from '@app/cli.js'
 import { ctx } from '@app/index.js'
 import { IPFSNodeManager } from '@app/ipfs/IPFSNodeManager.js'
-import { DagOperator } from '@app/ipfs/dagOperations.js'
-import { getOrbitDB } from '@app/orbitdb.js'
+import { Directory, Shareable } from '@app/ipfs/dagOperations.js'
+import { determineAddress, getOrbitDB } from '@app/orbitdb/orbitdb.js'
 import { logger } from '@common/logger.js'
+import { spawn } from 'child_process'
 import fs from 'fs'
+import { Controller } from 'ipfsd-ctl'
 import { createServer } from 'net'
-import { spawn } from 'node:child_process'
+import path from 'path'
 /**
  * Checks if a given port is in use. Tries to craete a server and bind it to the port, if successful, closes the server, meaning the specified port it's not in use.
  * @param {number} port - The port number to check.
@@ -23,18 +25,32 @@ export const isPortInUse = async (port: number): Promise<boolean> => {
             .listen(port)
     })
 }
+// this method gets a function that is execture after initializing the context if needed and deinitializing it after the function is executed
+export async function withContext(fn: () => Promise<void>) {
+    await initializeContext()
+    await fn()
+    await deInitializeContext()
+}
 
 export async function initializeContext() {
     if (ctx.manager === undefined) {
         ctx.manager = await new IPFSNodeManager()
-        const ipfs = await ctx.manager.createNode()
-        ;(await ipfs).start()
+        let ipfs : Controller<`go`> = await ctx.manager.createNode()
+        // remove ipfshare/ap
+        // rmSync(`${ipfs.path}/api`, {force: true})
+        ipfs = await ipfs.start().catch((err) => {
+            logger.error(err)
+            throw err
+        })
         ctx.ipfs = ipfs
+        // ctx.dbAddress = await determineAddress()
         ctx.orbitdb = await getOrbitDB()
-        ctx.dagOperator = await new DagOperator().create()
     }
 }
-
+export async function deInitializeContext() {
+    await ctx.orbitdb?.disconnect()
+    
+}
 function isDirectorySync(path: string) {
     try {
         const stats = fs.statSync(path)
@@ -45,10 +61,37 @@ function isDirectorySync(path: string) {
     }
 }
 
+function readDirectoryRecursively(directoryPath: string): Directory {
+    const directory: Directory = {}
+
+    const entries = fs.readdirSync(directoryPath, { withFileTypes: true })
+
+    for (const entry of entries) {
+        const entryPath = path.join(directoryPath, entry.name)
+
+        if (entry.isFile()) {
+            // If it's a file, read its contents and add it to the directory's files
+            const fileContent = fs.readFileSync(entryPath)
+            if (!directory.files) {
+                directory.files = new Map()
+            }
+            directory.files.set(entry.name, fileContent)
+        } else if (entry.isDirectory()) {
+            // If it's a directory, recursively read its contents and add it to the directory's directories
+            const subDirectory = readDirectoryRecursively(entryPath)
+            if (!directory.directories) {
+                directory.directories = new Map()
+            }
+            directory.directories.set(entry.name, subDirectory)
+        }
+    }
+
+    return directory
+}
 
 export function getBuffersFromFiles(paths: string[]) {
     if (!paths.length) throw new Error(`No files provided`)
-    const bufferMap: Map<string, Buffer> = new Map()
+    const bufferMap: Shareable = new Map()
     for (const path of paths) {
         if (fs.existsSync(path)) {
             //check if the path is a directory, if it is, get all the files in it
@@ -57,7 +100,8 @@ export function getBuffersFromFiles(paths: string[]) {
                 bufferMap.set(path, buffer)
                 continue
             }
-            throw new Error(`Path ${path} is a directory, directories are not supported yet`)
+            const dir = readDirectoryRecursively(path)
+            bufferMap.set(path, dir)
         }
     }
     return bufferMap
@@ -66,14 +110,9 @@ export function getBuffersFromFiles(paths: string[]) {
 export async function relaunchAsDaemon (): Promise<void> {
     if ( !process.argv[0] || !process.argv[1]) process.exit(1)
     const command = process.argv[0]
-    // if (options.background) {
-    // launch a dettached process which executes the application with the daemon comand
-    const out = fs.openSync(`./daemon.log`, `a`)
-    const err = fs.openSync(`./daemon.log`, `a`)
-    logger.debug(`${process.argv} daemon `)
-    const daemon = spawn(command, [process.argv[1], `daemon`], { detached: true, stdio: [`ignore`, out, err] })
+    logger.debug(`${process.argv} daemon start`)
+    const daemon = spawn(command, [process.argv[1], `daemon`, `start`], { detached: true  })
     logger.info(`Daemon parent process launched with pid ${daemon.pid}`)
     daemon.unref() 
-    // }
           
 }

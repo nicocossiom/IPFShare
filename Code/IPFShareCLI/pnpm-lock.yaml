@@ -7,7 +7,7 @@ settings:
 dependencies:
   '@commander-js/extra-typings':
     specifier: github:commander-js/extra-typings
-    version: github.com/commander-js/extra-typings/2100da9731aaa90cada793d5d4e3b5c30bf08e8d(commander@10.0.1)
+    version: github.com/commander-js/extra-typings/1c29b9823b8fcfaf7dfcfa517310a360a969dad4(commander@11.0.0)
   '@types/figlet':
     specifier: ^1.5.6
     version: 1.5.6
@@ -15,8 +15,8 @@ dependencies:
     specifier: ^5.2.0
     version: 5.2.0
   commander:
-    specifier: ^10.0.1
-    version: 10.0.1
+    specifier: ^11.0.0
+    version: 11.0.0
   did:
     specifier: ^0.5.0
     version: 0.5.0
@@ -62,6 +62,12 @@ dependencies:
   orbit-db:
     specifier: ^0.29.0
     version: 0.29.0(go-ipfs@0.19.2)(ipfs@0.66.0)(ipfsd-ctl@13.0.0)
+  orbit-db-identity-provider:
+    specifier: https://github.com/nicocossiom/orbit-db-identity-provider
+    version: github.com/nicocossiom/orbit-db-identity-provider/faff28967fe6672b369c15cbac33a2f5b9a8e369
+  orbit-db-keystore:
+    specifier: ^2.0.0
+    version: 2.0.0
   ps-list:
     specifier: ^8.1.1
     version: 8.1.1
@@ -2995,9 +3001,9 @@ packages:
     dependencies:
       delayed-stream: 1.0.0
 
-  /commander@10.0.1:
-    resolution: {integrity: sha512-y4Mg2tXshplEbSGzx7amzPwKKOCGuoSRP/CjEdwwk0FOGlUbq6lKuoyDZTNZkmxHdJtp54hdfY/JUrdL7Xfdug==}
-    engines: {node: '>=14'}
+  /commander@11.0.0:
+    resolution: {integrity: sha512-9HMlXtt/BNoYr8ooyjjNRdIilOTkVJXB+GhxMTtOKwk0R4j4lS4NpjuqmRxroBfnfTSHQIHQB7wryHhXarNjmQ==}
+    engines: {node: '>=16'}
     dev: false
 
   /commander@2.20.3:
@@ -8330,15 +8336,15 @@ packages:
     requiresBuild: true
     optional: true
 
-  github.com/commander-js/extra-typings/2100da9731aaa90cada793d5d4e3b5c30bf08e8d(commander@10.0.1):
-    resolution: {tarball: https://codeload.github.com/commander-js/extra-typings/tar.gz/2100da9731aaa90cada793d5d4e3b5c30bf08e8d}
-    id: github.com/commander-js/extra-typings/2100da9731aaa90cada793d5d4e3b5c30bf08e8d
+  github.com/commander-js/extra-typings/1c29b9823b8fcfaf7dfcfa517310a360a969dad4(commander@11.0.0):
+    resolution: {tarball: https://codeload.github.com/commander-js/extra-typings/tar.gz/1c29b9823b8fcfaf7dfcfa517310a360a969dad4}
+    id: github.com/commander-js/extra-typings/1c29b9823b8fcfaf7dfcfa517310a360a969dad4
     name: '@commander-js/extra-typings'
-    version: 10.0.3
+    version: 11.0.0
     peerDependencies:
-      commander: 10.0.x
+      commander: 11.0.x
     dependencies:
-      commander: 10.0.1
+      commander: 11.0.0
     dev: false
 
   github.com/lukas2005/types-ipfs/fb4bd2c5780810b8355356f2f683064008b60053:
@@ -8346,6 +8352,21 @@ packages:
     name: '@types/ipfs'
     version: 0.23.6
     dev: true
+
+  github.com/nicocossiom/orbit-db-identity-provider/faff28967fe6672b369c15cbac33a2f5b9a8e369:
+    resolution: {tarball: https://codeload.github.com/nicocossiom/orbit-db-identity-provider/tar.gz/faff28967fe6672b369c15cbac33a2f5b9a8e369}
+    name: orbit-db-identity-provider
+    version: 0.5.0
+    dependencies:
+      '@ethersproject/wallet': 5.7.0
+      assert: 2.0.0
+      dids: 3.4.0
+      lru: 3.1.0
+      orbit-db-keystore: 2.0.0
+      path-browserify: 1.0.1
+      stream-browserify: 3.0.0
+      uint8arrays: 4.0.3
+    dev: false
 
   github.com/orbitdb/orbit-db-types/ed41369e64c054952c1e47505d598342a4967d4c(go-ipfs@0.19.2)(ipfs@0.66.0)(ipfsd-ctl@13.0.0):
     resolution: {tarball: https://codeload.github.com/orbitdb/orbit-db-types/tar.gz/ed41369e64c054952c1e47505d598342a4967d4c}
