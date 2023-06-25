@@ -1,6 +1,7 @@
 import { IPFSNodeManager } from '@ipfs/IPFSNodeManager.js'
 import { DID } from 'dids'
 import { Controller, ControllerType } from 'ipfsd-ctl'
+import { Socket } from 'net'
 import OrbitDB from 'orbit-db'
 import { Identity } from 'orbit-db-identity-provider'
 // eslint-disable-next-line quotes
@@ -12,4 +13,5 @@ export interface AppContext {
     identity: Identity | undefined,
     did: DID | undefined,
     ipfs: Controller<ControllerType> | undefined,
+    daemonSocket: Socket | undefined
 }

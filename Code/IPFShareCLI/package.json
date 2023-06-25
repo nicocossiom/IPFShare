@@ -17,8 +17,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@commander-js/extra-typings": "github:commander-js/extra-typings",
-    "@types/figlet": "^1.5.6",
     "chalk": "^5.2.0",
     "commander": "^11.0.0",
     "did": "^0.5.0",
@@ -43,8 +41,10 @@
   },
   "devDependencies": {
     "@types/inquirer": "^9.0.3",
+    "@commander-js/extra-typings": "^11.0.0",
     "@types/node": "^18.16.3",
     "@types/orbit-db": "github:orbitdb/orbit-db-types",
+    "@types/figlet": "^1.5.6",
     "@typescript-eslint/eslint-plugin": "^5.59.2",
     "@typescript-eslint/parser": "^5.59.2",
     "concurrently": "^8.0.1",

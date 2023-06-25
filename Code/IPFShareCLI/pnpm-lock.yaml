@@ -6,8 +6,8 @@ settings:
 
 dependencies:
   '@commander-js/extra-typings':
-    specifier: github:commander-js/extra-typings
-    version: github.com/commander-js/extra-typings/1c29b9823b8fcfaf7dfcfa517310a360a969dad4(commander@11.0.0)
+    specifier: ^11.0.0
+    version: 11.0.0(commander@11.0.0)
   '@types/figlet':
     specifier: ^1.5.6
     version: 1.5.6
@@ -227,6 +227,14 @@ packages:
   /@colors/colors@1.5.0:
     resolution: {integrity: sha512-ooWCrlZP11i8GImSjTHYHLkvFDP48nS4+204nGb1RiX/WXYHmJA2III9/e2DWVabCESdW7hBAEzHRqUn9OUVvQ==}
     engines: {node: '>=0.1.90'}
+    dev: false
+
+  /@commander-js/extra-typings@11.0.0(commander@11.0.0):
+    resolution: {integrity: sha512-06ol6Kn5gPjFY6v0vWOZ84nQwyqhZdaeZCHYH3vhwewjpOEjniF1KHZxh18887G3poWiJ8qyq5pb6ANuiddfPQ==}
+    peerDependencies:
+      commander: 11.0.x
+    dependencies:
+      commander: 11.0.0
     dev: false
 
   /@cspotcode/source-map-support@0.8.1:
@@ -8335,17 +8343,6 @@ packages:
     engines: {node: '>=0.6'}
     requiresBuild: true
     optional: true
-
-  github.com/commander-js/extra-typings/1c29b9823b8fcfaf7dfcfa517310a360a969dad4(commander@11.0.0):
-    resolution: {tarball: https://codeload.github.com/commander-js/extra-typings/tar.gz/1c29b9823b8fcfaf7dfcfa517310a360a969dad4}
-    id: github.com/commander-js/extra-typings/1c29b9823b8fcfaf7dfcfa517310a360a969dad4
-    name: '@commander-js/extra-typings'
-    version: 11.0.0
-    peerDependencies:
-      commander: 11.0.x
-    dependencies:
-      commander: 11.0.0
-    dev: false
 
   github.com/lukas2005/types-ipfs/fb4bd2c5780810b8355356f2f683064008b60053:
     resolution: {commit: fb4bd2c5780810b8355356f2f683064008b60053, repo: git+ssh://git@github.com/lukas2005/types-ipfs.git, type: git}

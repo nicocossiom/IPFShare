@@ -18,4 +18,7 @@ RUN yarn run build
 
 RUN yarn start setup /app/ipfshare
 ENV IPFSHARE_HOME=/app/ipfshare
+EXPOSE 4002
+EXPOSE 8090
+EXPOSE 5001
 CMD /bin/bash

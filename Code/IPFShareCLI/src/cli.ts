@@ -10,7 +10,6 @@ import fs from 'fs'
 import { CID } from 'ipfs-http-client'
 import path from 'path'
 import { addKnownPeer, getRegistryInfo, listFriends, removeKnownPeer } from './friends.js'
-import { determineAddress } from './orbitdb/orbitdb.js'
 chalk.level = 3
 
 
@@ -200,7 +199,6 @@ program.command(`info`)
                 console.log(`DID: ${ctx.identity?.toJSON().id}}`)
                 console.log(`PeerID: ${ctx.ipfs?.peer.id}`)
                 await getRegistryInfo()
-                console.log(`${await determineAddress()}`)
             })
     })
        

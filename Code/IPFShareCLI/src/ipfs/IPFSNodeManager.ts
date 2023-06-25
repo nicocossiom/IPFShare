@@ -2,6 +2,8 @@
 // import { tcp } from '@libp2p/tcp'
 // import { DaemonCommandOptions } from '@app/cli.js'
 import { isPortInUse } from '@app/common/utils.js'
+import { ctx } from '@app/index.js'
+import { listenOnDB } from '@app/orbitdb/orbitdb.js'
 import { logger } from '@common/logger.js'
 import { newNodeConfig } from '@ipfs/ipfsNodeConfigs.js'
 import fs from 'fs'
@@ -13,6 +15,7 @@ import { IPFS } from 'ipfs'
 import * as ipfsHTTpModule from 'ipfs-http-client'
 import type { ControllerType, Factory, IPFSOptions } from 'ipfsd-ctl'
 import * as Ctl from 'ipfsd-ctl'
+import net from "node:net"
 import path from 'node:path'
 import psList from 'ps-list'
 
@@ -170,19 +173,56 @@ class IPFSNodeManager {
         }
     }
 
+
+    private static createOrbitDBService() {
+        const server = net.createServer(socket => {
+            socket.on(`data`, data => {
+                const message = data.toString()
+
+                if (message === `pauseOrbitDB`) {
+                    (async () => {
+                        logger.info(`Pausing OrbitDB`)
+                        ctx.orbitdb?.disconnect()
+                        socket.write(`OrbitDB paused`)
+                    })().catch(err => {
+                        logger.error(`Error pausing OrbitDB`, err)
+                    })
+                } else if (message === `resumeOrbitDB`) {
+                    (async () => {
+                        logger.info(`Resuming OrbitDB`)
+                        await listenOnDB()
+                        socket.write(`OrbitDB resumed`)
+                    })().catch(err => {
+                        logger.error(`Error resuming OrbitDB`, err)
+                    })
+                }
+            })
+        })
+
+        return server
+    }
+
+
     public async startDaemon(): Promise<void> {
         let daemon = await this.createNode()
+        const service = IPFSNodeManager.createOrbitDBService()
+        service.listen(3000, `localhost`, () => { 
+            logger.info(`OrbitDB service listening on port 3000`)
+        })
         daemon = await daemon.start()
             .catch((err) => { 
                 logger.error(`Error launching daemon`, err) 
                 process.exit(1)
             })
+        logger.debug(`Daemon stdio: ${daemon.subprocess?.stdout} ${daemon.subprocess?.stderr}`)
         daemon.subprocess?.stdout?.pipe(process.stdout)
         daemon.subprocess?.stderr?.pipe(process.stderr)
         daemon.subprocess?.setMaxListeners(Infinity)
         logger.info(`set max listeners to infinity, current max listeners: ${daemon.subprocess?.getMaxListeners()}`)
         logger.debug(`IPFS Daemon started with pid ${daemon.subprocess?.pid}`)        
-       
+        ctx.ipfs = daemon
+        await listenOnDB()
+
         process.on(`SIGINT`, () => {
             (async () => {
                 logger.info(`Killing daemon`)

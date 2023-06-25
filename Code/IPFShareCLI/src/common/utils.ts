@@ -2,12 +2,13 @@
 import { ctx } from '@app/index.js'
 import { IPFSNodeManager } from '@app/ipfs/IPFSNodeManager.js'
 import { Directory, Shareable } from '@app/ipfs/dagOperations.js'
-import { determineAddress, getOrbitDB } from '@app/orbitdb/orbitdb.js'
+import { getOrbitDB } from '@app/orbitdb/orbitdb.js'
 import { logger } from '@common/logger.js'
 import { spawn } from 'child_process'
 import fs from 'fs'
 import { Controller } from 'ipfsd-ctl'
 import { createServer } from 'net'
+import net from 'node:net'
 import path from 'path'
 /**
  * Checks if a given port is in use. Tries to craete a server and bind it to the port, if successful, closes the server, meaning the specified port it's not in use.
@@ -43,14 +44,42 @@ export async function initializeContext() {
             throw err
         })
         ctx.ipfs = ipfs
+        ctx.daemonSocket = new net.Socket()
+        ctx.daemonSocket.connect(3000, `localhost`, () => {
+            console.log(`Connected to the daemon process.`) 
+        })
+        await sendMessageToOrbitDBService(`pauseOrbitDB`)
         // ctx.dbAddress = await determineAddress()
         ctx.orbitdb = await getOrbitDB()
     }
 }
 export async function deInitializeContext() {
     await ctx.orbitdb?.disconnect()
-    
+    await sendMessageToOrbitDBService(`resumeOrbitDB`)
+    ctx.daemonSocket?.destroy()
+    process.exit(0)
 }
+
+
+function sendMessageToOrbitDBService(message: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+        if (ctx.daemonSocket === undefined ) throw new Error(`Daemon socket is undefined`)
+        ctx.daemonSocket.once(`data`, data => {
+            // Handle any response or acknowledgment from the daemon process
+            const response = data.toString()
+            console.log(`Received response for message ${message}:`, response)
+            resolve(response)
+        })
+
+        ctx.daemonSocket.write(message, error => {
+            if (error) {
+                console.error(`Error sending message:`, error.message)
+                reject(error)
+            }
+        })
+    })
+}
+
 function isDirectorySync(path: string) {
     try {
         const stats = fs.statSync(path)

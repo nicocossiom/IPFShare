@@ -3,7 +3,7 @@ import { logger } from './common/logger.js'
 import { ctx } from "./index.js"
 import { getOrbitDB } from "./orbitdb/orbitdb.js"
 
-type PeerDocument = { peerId: string, alias: string }
+export type PeerDocument = { peerId: string, alias: string }
 
 
 
@@ -32,7 +32,8 @@ export async function getRegistryInfo() {
     const peersDB = await orbit.keyvalue<PeerDocument>(`/orbitdb/zdpuAzWtyxYDTVivt9osNqRGLncm9xmJAoWJXpwct5z1U9qTs/IPFShareGlobalRegistry`)
     await peersDB.load()
     console.log(`DBAdress: ${peersDB.address.root}`)
-    console.log(peersDB.identity.toJSON())
+    console.log(`DBIdentity: ${peersDB.identity.toJSON()}`)
+    await peersDB.close()
 }
 
 export async function addKnownPeer(peers: string[]) {
@@ -41,8 +42,11 @@ export async function addKnownPeer(peers: string[]) {
     const orbit = ctx.orbitdb ?? await getOrbitDB()
     const peersDB = await orbit.keyvalue<PeerDocument>(`/orbitdb/zdpuAzWtyxYDTVivt9osNqRGLncm9xmJAoWJXpwct5z1U9qTs/IPFShareGlobalRegistry`, {
         accessController: {
-            write: [`*`]
-        }
+            write: [`*`], 
+        },
+        replicate: true, 
+        localOnly: false, 
+        overwrite: false, 
     })
     console.log(`ORBITDB VALID ADDRESS ${peersDB.address.root}`)
     await peersDB.load()
@@ -51,6 +55,7 @@ export async function addKnownPeer(peers: string[]) {
         console.log(chalk.green(`Added ${alias} with peerId ${peerId}`))
         logger.debug(`transaction result ${res}`)
     }
+    await peersDB.close()
 }
 
 export async function removeKnownPeer(peers: string[]) {
@@ -61,6 +66,7 @@ export async function removeKnownPeer(peers: string[]) {
     for (const { peerId, alias } of parsedPeers) {
         await peersDB.del(alias, {})
     }
+    await peersDB.close()
 }
 
 export async function listFriends() {
@@ -71,4 +77,5 @@ export async function listFriends() {
     const peers = peersDB.all
     console.log(chalk.green(`Friends:`))
     console.log(peers)
+    await peersDB.close()
 }
