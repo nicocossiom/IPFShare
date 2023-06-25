@@ -1,3 +1,4 @@
 # .gitignore for typescripts project
 node_modules/
 .env
+dist/
