@@ -2,15 +2,16 @@
   "compilerOptions": {
     "target": "ESNext",
     "lib": [
-      "ESNext"
+      "ESNext",
+      "DOM",
     ],
     "types": [
       "node"
     ],
-    "module": "nodenext",
+    "module": "ESNext",
     "rootDir": "./",
-    "moduleResolution": "nodenext",
-    "moduleDetection": "force",
+    "moduleResolution": "node",
+    "moduleDetection": "auto",
     "baseUrl": "./",
     "paths": {
       "@app/*": [
@@ -32,7 +33,6 @@
     },
     "noEmit": false,
     "noEmitOnError": true,
-    "resolveJsonModule": true,
     "sourceMap": true,
     "outDir": "./dist",
     "allowSyntheticDefaultImports": true,
@@ -41,7 +41,6 @@
     "strict": true,
     "noImplicitAny": true,
     "strictNullChecks": true,
-    // "noUnusedLocals": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "skipLibCheck": true,

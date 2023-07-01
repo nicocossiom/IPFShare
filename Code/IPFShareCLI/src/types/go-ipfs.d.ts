@@ -1,1 +1,3 @@
-declare module `go-ipfs`
+declare module "go-ipfs" {
+    function path(): string
+}
