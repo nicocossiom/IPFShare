@@ -14,6 +14,9 @@ dependencies:
   '@types/node':
     specifier: ^20.3.2
     version: 20.3.2
+  '@types/tar':
+    specifier: ^6.1.5
+    version: 6.1.5
   '@types/tar-fs':
     specifier: ^2.0.1
     version: 2.0.1
@@ -2236,6 +2239,13 @@ packages:
     resolution: {integrity: sha512-1AX+Yt3icFuU6kxwmPakaiGrJUwG44MpuiqPg4dSolRFk6jmvs4b3IbUol9wKDLIgU76gevn3EwE8y/DkSJCZQ==}
     dependencies:
       '@types/node': 20.3.2
+    dev: false
+
+  /@types/tar@6.1.5:
+    resolution: {integrity: sha512-qm2I/RlZij5RofuY7vohTpYNaYcrSQlN2MyjucQc7ZweDwaEWkdN/EeNh6e9zjK6uEm6PwjdMXkcj05BxZdX1Q==}
+    dependencies:
+      '@types/node': 20.3.2
+      minipass: 4.2.8
     dev: false
 
   /@types/through@0.0.30:
@@ -6350,6 +6360,11 @@ packages:
     engines: {node: '>=8'}
     dependencies:
       yallist: 4.0.0
+
+  /minipass@4.2.8:
+    resolution: {integrity: sha512-fNzuVyifolSLFL4NzpF+wEF4qrgqaaKX0haXPQEdQ7NKAN+WecoKMHV09YcuL/DHxrUsYQOK3MiuDf7Ip2OXfQ==}
+    engines: {node: '>=8'}
+    dev: false
 
   /minipass@5.0.0:
     resolution: {integrity: sha512-3FnjYuehv9k6ovOEbyOswadCDPX1piCfhV8ncmYtHOjuPwylVWsghTLo7rabjC3Rx5xD4HDx8Wm1xnMF7S5qFQ==}

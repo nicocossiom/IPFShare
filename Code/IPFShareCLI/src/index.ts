@@ -1,5 +1,5 @@
+import { program } from "@app/cli.js"
 import { AppContext } from "@app/types/types.js"
-import { myTar } from "@ipfs/dagOperations.js"
 import "dotenv/config"
 export const ctx: AppContext = {
     manager: undefined,
@@ -10,10 +10,9 @@ export const ctx: AppContext = {
     did: undefined,
     daemonSocket: undefined
 } 
-// await program.parseAsync(process.argv).catch((e) => {
-//     console.error(e)
-//     process.exit(1)
-// })
 
+await program.parseAsync(process.argv).catch((e) => {
+    console.error(e)
+    process.exit(1)
+})
 
-await myTar(["/Users/pepperonico/Downloads"])

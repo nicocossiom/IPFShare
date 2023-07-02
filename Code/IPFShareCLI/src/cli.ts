@@ -3,7 +3,7 @@ import { daemonPromptIfNeeded, notSetupPrompt, setupPrompt } from "@app/setup.js
 import { Command, Option, OptionValues } from "@commander-js/extra-typings"
 import { withContext } from "@common/utils.js"
 import { IPFSNodeManager } from "@ipfs/IPFSNodeManager.js"
-import { DagOperator, myTar } from "@ipfs/dagOperations.js"
+import { Share, addEncryptedObject, createEncryptedTarFromPaths, decryptAndExtractTarball, downloadFromIpfs, getEnctrypedObject, uploadToIpfs } from "@ipfs/dagOperations.js"
 import chalk from "chalk"
 import figlet from "figlet"
 import fs from "fs"
@@ -77,23 +77,6 @@ type CommandOptions<T extends Command<unknown[], OptionValues>> = T extends Comm
 type CommandArguments<T extends Command<unknown[], OptionValues>> = T extends Command<infer A, OptionValues> ? A : never;
 export type DaemonCommandOptions = CommandOptions<typeof daemonCommand>;
 
-program.command("share")
-    .summary("Upload a file or folder")
-    .description("Uploads a file or folder to IPFS. The file or folder is encrypted and uploaded to IPFS. The hash is then added to the user's IPFShare index.")
-    .argument("[path...]", "Path to file or folder to upload")
-    .action(async (path: string[]) => {
-    // if empty path array
-        if (!path || path.length === 0) {
-            program.help()
-        }
-        await withContext(async () => {
-            // const bufferMap = getBuffersFromFiles(path)
-            // if (ctx.identity == null) throw new Error("Identity is null")
-            // const cid = await DagOperator.addEncryptedObject(bufferMap, [ctx.identity.id])
-            // console.log(`Added ${cid} to IPFS`)
-        })
-    })
-
 program.command("get")
     .summary("Download a file or folder")
     .description("Downloads a file or folder from IPFS. The file or folder is decrypted and downloaded from IPFS.")
@@ -106,7 +89,7 @@ program.command("get")
         await withContext(async () => {
             for (const strCid of cids) {
                 const cid = CID.parse(strCid)
-                const bufferMap = await DagOperator.getEnctrypedObject(cid)
+                const bufferMap = await getEnctrypedObject(cid)
                 console.log(bufferMap)
             }
         })
@@ -124,16 +107,16 @@ program.command("cat")
         await withContext(async () => {
             for (const strCid of cids) {
                 const cid = CID.parse(strCid)
-                const bufferMap = await DagOperator.getEnctrypedObject(cid)
-                const isBuffer = (bufferMap.entries().next().value[1] instanceof Buffer)
-                if (bufferMap.size !== 1 || !isBuffer) {
-                    console.log("The given CID corresponds to a folder. Use 'ipfshare ls' to show the contents of the folder.")
-                    process.exit(0)
-                }
-                for (const [key, value] of bufferMap.entries()) {
-                    console.log(`\n${key}\n`)
-                    console.log(value.toString())
-                }
+                const bufferMap = await getEnctrypedObject(cid)
+                // const isBuffer = (bufferMap.entries().next().value[1] instanceof Buffer)
+                // if (bufferMap.size !== 1 || !isBuffer) {
+                //     console.log("The given CID corresponds to a folder. Use 'ipfshare ls' to show the contents of the folder.")
+                //     process.exit(0)
+                // }
+                // for (const [key, value] of bufferMap.entries()) {
+                //     console.log(`\n${key}\n`)
+                //     console.log(value.toString())
+                // }
             }
         })
     })
@@ -150,31 +133,35 @@ program.command("ls")
         await withContext(async () => {
             for (const strCid of cids) {
                 const cid = CID.parse(strCid)
-                const bufferMap = await DagOperator.getEnctrypedObject(cid)
-                for (const [key, value] of bufferMap.entries()) {
-                    if (value instanceof Buffer) {
-                        console.log(key) 
-                    } else {
-                        console.log(key + "/")
-                    }
-                }
+                // const bufferMap = await DagOperator.getEnctrypedObject(cid)
+                // for (const [key, value] of bufferMap.entries()) {
+                //     if (value instanceof Buffer) {
+                //         console.log(key) 
+                //     } else {
+                //         console.log(key + "/")
+                //     }
+                // }
             }
         })
     })
         
-// program.command("prueba")
-//     .argument("[path...]", "Path to file or folder to upload")
-//     .action(async (paths) => {
-//     // if empty path array
-//         if (!paths || paths.length === 0) {
-//             program.help()
-//         }
-//         // await withContext(async () => {
-//         for (const path of paths) {
-//             await myTar(path)
-//         }
-//         // })
-//     })
+program.command("share")
+    .argument("[path...]", "Path to file or folder to upload")
+    .action(async (paths) => {
+    // if empty path array
+        if (!paths || paths.length === 0) {
+            program.help()
+        }
+        await withContext(async () => {
+            if (!ctx.did) throw new Error("DID not initialized")
+            const { encryptedStream, iv, key } = await createEncryptedTarFromPaths(paths)
+            const res = await uploadToIpfs(encryptedStream)
+            const share: Share = { contentCID: res.cid, iv: iv, key: key, recipientDIDs: [ctx.did.id] }
+            const shareCID = await addEncryptedObject(share)
+            console.log(`Share CID: ${shareCID.toString()}`)
+        })
+
+    })
 
 program.command("download")
     .summary("Print the contents of a given CID")
@@ -198,8 +185,12 @@ program.command("download")
         await withContext(async () => {
             for (const strCid of cids) {
                 const cid = CID.parse(strCid)
-                const bufferMap = await DagOperator.getEnctrypedObject(cid)
-              
+                const {contentCID, iv, key, recipientDIDs} = await getEnctrypedObject(cid)
+                console.log(`Content CID: ${contentCID.toString()}`)
+                console.log(`IV: ${iv.toString("base64")}`)
+                console.log(`Key: ${key.toString("base64")}`)
+                const contentRes = await downloadFromIpfs(contentCID)
+                await decryptAndExtractTarball(contentRes, key, iv, outPath)
             }
         })
     })
