@@ -2,6 +2,8 @@
 import { ctx } from "@app/index.js"
 import { IPFSNodeManager } from "@app/ipfs/IPFSNodeManager.js"
 import { getOrbitDB } from "@app/orbitdb/orbitdb.js"
+import { UserRegistry } from "@app/registry.js"
+import { getAppConfig } from "@common/appConfig.js"
 import { logger } from "@common/logger.js"
 import { spawn } from "child_process"
 import { Controller } from "ipfsd-ctl"
@@ -34,8 +36,6 @@ export async function initializeContext() {
     if (ctx.manager === undefined) {
         ctx.manager = await new IPFSNodeManager()
         let ipfs : Controller<"go"> = await ctx.manager.createNode()
-        // remove ipfshare/ap
-        // rmSync(`${ipfs.path}/api`, {force: true})
         ipfs = await ipfs.start().catch((err) => {
             logger.error(err)
             throw err
@@ -43,20 +43,24 @@ export async function initializeContext() {
         ctx.ipfs = ipfs
         ctx.daemonSocket = new net.Socket()
         ctx.daemonSocket.connect(3000, "localhost", () => {
-            console.log("Connected to the daemon process.") 
+            logger.info("Connected to the daemon process.") 
         })
         await sendMessageToOrbitDBService("pauseOrbitDB")
-        // ctx.dbAddress = await determineAddress()
         ctx.orbitdb = await getOrbitDB()
+        
+        ctx.registry = new UserRegistry(ctx.ipfs.api, ctx.orbitdb)
+        await ctx.registry.open()
+        ctx.appConfig = await getAppConfig()
     }
 }
 export async function deInitializeContext() {
+    await ctx.registry?.store.close()
+    if (!ctx.orbitdb) throw new Error("OrbitDB instance undefined, not closed yet, should not happen")
+    ctx.identity?.provider.keystore.close()
     await ctx.orbitdb?.disconnect()
-    await sendMessageToOrbitDBService("resumeOrbitDB")
-    ctx.daemonSocket?.destroy()
+    ctx.daemonSocket?.write("resumeOrbitDB")
     process.exit(0)
 }
-
 
 function sendMessageToOrbitDBService(message: string): Promise<string> {
     return new Promise((resolve, reject) => {
@@ -73,6 +77,7 @@ function sendMessageToOrbitDBService(message: string): Promise<string> {
                 console.error("Error sending message:", error.message)
                 reject(error)
             }
+            console.log(`Sent message ${message}`)
         })
     })
 }

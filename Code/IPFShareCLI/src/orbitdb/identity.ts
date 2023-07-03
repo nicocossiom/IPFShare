@@ -10,7 +10,7 @@ export interface Key {
   name: string
 }
 
-export async function getIdentity(){
+export async function getIdentity(orbitdbPath: string){
     if (ctx.ipfs === undefined) throw new Error("IPFS not initialized")
     const keys = await ctx.ipfs.api.key.list()
 
@@ -25,7 +25,7 @@ export async function getIdentity(){
     did.setResolver(resolver)
     logger.debug(`DID authenticated: ${await did.authenticate()}`)
     ctx.did = did
-    const identity = await Identities.createIdentity({ type: "DID", did: did, provider: didProvider, resolver: resolver })  
+    const identity = await Identities.createIdentity({ type: "DID", did: did, provider: didProvider, resolver: resolver, identityKeysPath: orbitdbPath})  
     ctx.identity = identity
     return identity
 }

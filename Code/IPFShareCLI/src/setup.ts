@@ -5,8 +5,43 @@ import chalk from "chalk"
 import fs from "fs"
 import inquirer from "inquirer"
 import ora from "ora"
+import path from "path"
 import { env } from "process"
 
+export async function usernamePrompt(validateFn: (value: string) => Promise<boolean>): Promise<string>{
+    const { username } = await inquirer.prompt([
+        {
+            name: "username",
+            type: "input",
+            message: "Enter a username", 
+        }
+    ]) as { username: string }
+    return await validateFn(username) ? username : await usernamePrompt(validateFn)
+}
+async function validateFn(username: string): Promise < boolean > {
+    if (username === "") {
+        console.log(chalk.red("Username cannot be empty"))
+        return false
+    }
+    return true
+}
+export async function intializeConfig() {
+    if (!process.env.IPFSHARE_HOME) throw new Error("IPFSHARE_HOME is not defined")
+    // create a config.json file under the IPFSHARE_HOME folder if not exists
+    const configPath = path.join(process.env.IPFSHARE_HOME, "config.json")
+    if (!fs.existsSync(configPath)) {
+        const username = await usernamePrompt(validateFn)
+        fs.writeFileSync(configPath, JSON.stringify({ username: username }))
+    }
+    // check if the username is set
+    const config = JSON.parse(fs.readFileSync(configPath).toString())
+    if (config.username && config.username === "") {
+        const username = await usernamePrompt(validateFn)
+        config.username = username
+        fs.writeFileSync(configPath, JSON.stringify(config))
+    }
+    
+}
 
 export async function notSetupPrompt() {
     if (!process.env.IPFSHARE_HOME) {

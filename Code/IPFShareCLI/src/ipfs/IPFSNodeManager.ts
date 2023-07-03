@@ -1,7 +1,9 @@
 
 import { isPortInUse } from "@app/common/utils.js"
 import { ctx } from "@app/index.js"
-import { listenOnDB } from "@app/orbitdb/orbitdb.js"
+import { getOrbitDB } from "@app/orbitdb/orbitdb.js"
+import { UserRegistry } from "@app/registry.js"
+import { getAppConfig } from "@common/appConfig.js"
 import { logger } from "@common/logger.js"
 import { newNodeConfig } from "@ipfs/ipfsNodeConfigs.js"
 import fs from "fs"
@@ -137,20 +139,28 @@ class IPFSNodeManager {
                 if (message === "pauseOrbitDB") {
                     (async () => {
                         logger.info("Pausing OrbitDB")
-                        ctx.orbitdb?.disconnect()
+                        if (!ctx.orbitdb) throw new Error("OrbitDB is not initialized")
+                        await ctx.orbitdb.disconnect()
+                        if (!process.env.IPFSHARE_HOME) throw new Error("IPFShare home is not set")
+                        ctx.identity?.provider.keystore.close()
                         socket.write("OrbitDB paused")
-                    })().catch(err => {
-                        logger.error("Error pausing OrbitDB", err)
-                    })
-                } else if (message === "resumeOrbitDB") {
+                    })()
+                }
+                else if (message === "resumeOrbitDB") {
                     (async () => {
                         logger.info("Resuming OrbitDB")
-                        await listenOnDB()
-                        socket.write("OrbitDB resumed")
-                    })().catch(err => {
-                        logger.error("Error resuming OrbitDB", err)
-                    })
+                        if (!ctx.ipfs) throw new Error("IPFS is not initialized")
+                        ctx.orbitdb = await getOrbitDB(true)
+                        ctx.registry = new UserRegistry(ctx.ipfs.api, ctx.orbitdb)
+                        await ctx.registry.open()
+                        logger.info("Replicating registry")
+                        await ctx.registry.replicate()
+                    })()
                 }
+            })
+            socket.on("error", err => {
+                logger.error("Error in OrbitDB service", err)
+                throw err
             })
         })
 
@@ -159,11 +169,11 @@ class IPFSNodeManager {
 
 
     public async startDaemon(): Promise<void> {
-        let daemon = await this.createNode()
         const service = IPFSNodeManager.createOrbitDBService()
         service.listen(3000, "localhost", () => { 
             logger.info("OrbitDB service listening on port 3000")
         })
+        let daemon = await this.createNode()
         daemon = await daemon.start()
             .catch((err) => { 
                 logger.error("Error launching daemon", err) 
@@ -174,10 +184,14 @@ class IPFSNodeManager {
         daemon.subprocess?.stderr?.pipe(process.stderr)
         daemon.subprocess?.setMaxListeners(Infinity)
         logger.info(`set max listeners to infinity, current max listeners: ${daemon.subprocess?.getMaxListeners()}`)
-        logger.debug(`IPFS Daemon started with pid ${daemon.subprocess?.pid}`)        
+        logger.debug(`IPFS Daemon started with pid ${daemon.subprocess?.pid}`)
         ctx.ipfs = daemon
-        await listenOnDB()
-
+        ctx.orbitdb = await getOrbitDB(true)
+        ctx.registry = new UserRegistry(ctx.ipfs.api, ctx.orbitdb)
+        logger.info("Replicating registry")
+        await ctx.registry.replicate()
+        await ctx.registry.open()
+        ctx.appConfig = await getAppConfig(true)
         process.on("SIGINT", () => {
             (async () => {
                 logger.info("Killing daemon")
@@ -199,8 +213,6 @@ class IPFSNodeManager {
         
     }
 
-
-
     public static async stopDaemon(): Promise<void> {
         // get the pid of the daemon
         const pid = await psList().then((list) => {
@@ -219,8 +231,4 @@ class IPFSNodeManager {
     }
 }
 
-
 export { IPFSNodeManager }
-
-
-

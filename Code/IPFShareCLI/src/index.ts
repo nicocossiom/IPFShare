@@ -8,7 +8,9 @@ export const ctx: AppContext = {
     ipfs: undefined,
     identity: undefined,
     did: undefined,
-    daemonSocket: undefined
+    daemonSocket: undefined, 
+    registry: undefined, 
+    appConfig: undefined
 } 
 
 await program.parseAsync(process.argv).catch((e) => {

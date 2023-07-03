@@ -1,14 +1,14 @@
 import { ctx } from "@app/index.js"
 import { daemonPromptIfNeeded, notSetupPrompt, setupPrompt } from "@app/setup.js"
-import { Command, Option, OptionValues } from "@commander-js/extra-typings"
+import { Argument, Command, Option, OptionValues } from "@commander-js/extra-typings"
 import { withContext } from "@common/utils.js"
 import { IPFSNodeManager } from "@ipfs/IPFSNodeManager.js"
-import { Share, addEncryptedObject, createEncryptedTarFromPaths, decryptAndExtractTarball, downloadFromIpfs, getEnctrypedObject, uploadToIpfs } from "@ipfs/dagOperations.js"
+import { Share, addEncryptedObject, createEncryptedTarFromPaths, decryptAndExtractTarball, downloadFromIpfs, getEnctrypedObject, uploadToIpfs } from "@ipfs/ipfsUtils.js"
 import chalk from "chalk"
 import figlet from "figlet"
 import fs from "fs"
 import { CID } from "kubo-rpc-client"
-import { addKnownPeer, getRegistryInfo, listFriends, removeKnownPeer } from "./friends.js"
+import { decryptTarballAndReadEntries } from "./ipfs/ipfsUtils.js"
 chalk.level = 3
 
 
@@ -133,14 +133,13 @@ program.command("ls")
         await withContext(async () => {
             for (const strCid of cids) {
                 const cid = CID.parse(strCid)
-                // const bufferMap = await DagOperator.getEnctrypedObject(cid)
-                // for (const [key, value] of bufferMap.entries()) {
-                //     if (value instanceof Buffer) {
-                //         console.log(key) 
-                //     } else {
-                //         console.log(key + "/")
-                //     }
-                // }
+                const {contentCID, iv, key, recipientDIDs} = await getEnctrypedObject(cid)
+                console.log(`Content CID: ${contentCID.toString()}`)
+                console.log(`IV: ${iv.toString("base64")}`)
+                console.log(`Key: ${key.toString("base64")}`)
+                const contentRes = await downloadFromIpfs(contentCID)
+                console.log(`Downloaded content: ${contentRes}`)
+                await decryptTarballAndReadEntries(contentRes, key, iv)
             }
         })
     })
@@ -158,6 +157,7 @@ program.command("share")
             const res = await uploadToIpfs(encryptedStream)
             const share: Share = { contentCID: res.cid, iv: iv, key: key, recipientDIDs: [ctx.did.id] }
             const shareCID = await addEncryptedObject(share)
+            console.log(`Content CID: ${res.cid.toString()}`)
             console.log(`Share CID: ${shareCID.toString()}`)
         })
 
@@ -187,43 +187,75 @@ program.command("download")
                 const cid = CID.parse(strCid)
                 const {contentCID, iv, key, recipientDIDs} = await getEnctrypedObject(cid)
                 console.log(`Content CID: ${contentCID.toString()}`)
-                console.log(`IV: ${iv.toString("base64")}`)
-                console.log(`Key: ${key.toString("base64")}`)
+                console.log(`IV: ${Buffer.from(iv).toString("hex")}`)
+                console.log(`Key: ${Buffer.from(key).toString("hex")}`)
                 const contentRes = await downloadFromIpfs(contentCID)
-                await decryptAndExtractTarball(contentRes, key, iv, outPath)
+                const contentStats = await ctx.ipfs!.api.files.stat("/ipfs/" + contentCID.toString())
+                await decryptAndExtractTarball(contentRes, key, iv, outPath,contentStats.size)
             }
         })
     })
 
-const friendsCommand = program.command("friends")
-    .summary("Manage friends")
-    .description("Manage friends. Friends are other IPFShare users that you have added. You can add, remove, and list friends.")
-    .addOption(new Option("-a, --add <friend...>", "Add friends"))
-    .addOption(new Option("-rm, --remove <friends...>", "Remove friends"))
-    .addOption(new Option("-l, --list", "List friends"))
-    .action(async (options, command) => {
-    // if empty options object
-        if (!options || Object.keys(options).length === 0) {
-            command.help()
-        }
-        withContext(async () => {
-            if (options.add) return addKnownPeer(options.add)
-            if (options.remove) return await removeKnownPeer(options.remove)
-            if (options.list) return await listFriends()
+
+const registryUpdateCommand = new Command("update")
+    .summary("Update username if available")
+    .addArgument(new Argument("<username>", "Username to update to"))
+    .action(async (username) => {
+        await withContext(async () => {
+            if(!ctx.appConfig) throw new Error("AppConfig not initialized")
+            const userPartial = { username: username }
+            if (!ctx.appConfig.user.username) throw new Error("Username is not set")
+            await ctx.registry?.updateUser(ctx.appConfig.user.orbitdbIdentity, userPartial)
         })
     })
 
-export type FriendsCommandArguments = CommandArguments<typeof friendsCommand>
-export type FriendsCommandOpions = CommandOptions<typeof friendsCommand>
+const registryDeleteCommand = new Command("delete")
+    .summary("Delete your IPFShare account")
+
+const registryListCommand = new Command("list")
+    .summary("List all users in the IPFShare global registry")
+    .action(async () => {
+        await withContext(async () => {
+            const users = ctx.registry?.store.query(() => true)
+            console.log(users)
+        })
+    })
+
+const registryRegisterCommand = new Command("register")
+    .summary("Register yourself in IPFShare global registry")
+    .description("This is done automatically when using the application, if this IPFShare\
+     instance does not have a 'username' field in the config file the application will prompt you to register.")
+    .action(async () => {
+        await withContext(async () => {
+            await ctx.registry?.addUser({orbitdbIdentity: "fake", peerId: "fake", username: "fake"})
+        })
+    })
+
+const registruCommand = program.command("registry")
+    .summary("Access the IPFShare global registry. Change username or delete account.")
+    .description("Update and query the IPFShare global registry")
+    .addCommand(registryUpdateCommand)
+    .addCommand(registryDeleteCommand)
+    .addCommand(registryListCommand)
+    .addCommand(registryRegisterCommand)
+    .action(async (opts, command) => {
+        if (command.args.length === 0) {
+            command.help()
+            return
+        }
+    })
+
+export type FriendsCommandArguments = CommandArguments<typeof registruCommand>
+export type FriendsCommandOpions = CommandOptions<typeof registruCommand>
 
 program.command("info")
     .summary("Provides information about the running ipfshare instance such as DID and peerID")
     .action(async () => {
-        withContext(
+        await withContext(
             async () => {
                 console.log(`DID: ${ctx.identity?.toJSON().id}}`)
                 console.log(`PeerID: ${ctx.ipfs?.peer.id}`)
-                await getRegistryInfo()
+                console.log(`OrbitDB identity: ${ctx.orbitdb?.id}`)
             })
     })
        
