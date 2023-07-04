@@ -47,9 +47,12 @@ program.command("setup")
     - Generates encryption keys
     - Etc.`
     )
-    .argument("[path]", "Path to IPFShare home folder", "~/.ipfshare") // Square brackets around the argument make it optional
-    .action((path: string) => {
-        setupPrompt(path)
+    .argument("[path]", "Path to IPFShare home folder") // Square brackets around the argument make it optional
+    .action(async (path) => {
+        if (path) {
+            return await setupPrompt(path)
+        }
+        await setupPrompt()
     })
 
 

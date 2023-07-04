@@ -60,7 +60,7 @@ class IPFSNodeManager {
         
         let nodeConfig: IPFSOptions = { repo: repoPath }
         if (!fs.existsSync(repoPath)) {
-            fs.mkdirSync(repoPath)
+            fs.mkdirSync(repoPath, {recursive: true})
             if (!fs.existsSync(repoPath)) {
                 throw new Error("Could not create repo path")
             }
