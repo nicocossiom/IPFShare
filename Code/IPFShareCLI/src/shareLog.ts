@@ -1,5 +1,6 @@
-import { IPFS } from "ipfs"
+import { logger } from "@common/logger.js"
 import { CID } from "kubo-rpc-client/"
+import { IPFS } from "kubo-rpc-client/dist/src/types"
 import OrbitDB from "orbit-db"
 import EventStore from "orbit-db-eventstore"
 
@@ -50,7 +51,7 @@ export class ShareLog<T> {
 
     onNewShare(): void { 
         this.store.events.on("replicated", (address) => {
-            console.log(`ShareLog replicated: ${address}`)
+            logger.debug(`ShareLog replicated: ${address}`)
         })
     }
 }
@@ -67,18 +68,18 @@ export class IPFShareLog extends ShareLog<ShareLogEntry>{
         try {
             await super.create()
         } catch (err) {
-            console.log(`Error creating IPFShareLog with address ${this._storeAddress}`)
+            logger.debug(`Error creating IPFShareLog with address ${this._storeAddress}`)
         }
-        console.log(`IPFShareLog created with address ${this.store.address.path}`)
+        logger.debug(`IPFShareLog created with address ${this.store.address.path}`)
         this.store.events.on("replicated", (address) => {
-            console.log(`IPFShareLog replicated: ${address}`)
+            logger.debug(`IPFShareLog replicated: ${address}`)
         })
         this.store.events.on("replicate.progress", (address, hash, entry, progress, have) => { 
-            console.log(`IPFShareLog replication progress: ${address} ${hash} ${entry} ${progress} ${have}`)
+            logger.debug(`IPFShareLog replication progress: ${address} ${hash} ${entry} ${progress} ${have}`)
         })
     }
     async close(): Promise<void> {
         await super.close()
-        console.log(`IPFShareLog closed with address ${this.store.address.root}`)
+        logger.debug(`IPFShareLog closed with address ${this.store.address.root}`)
     }
 }

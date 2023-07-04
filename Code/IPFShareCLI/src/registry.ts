@@ -1,7 +1,7 @@
 import { logger } from "@common/logger.js"
-import { IPFS } from "ipfs"
-import OrbitDB from "orbit-db"
+import { IPFS } from "kubo-rpc-client/dist/src/types"
 
+import OrbitDB from "orbit-db"
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 import AccessController from "orbit-db-access-controllers/interface"

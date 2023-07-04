@@ -1,6 +1,6 @@
 import { AppConfig } from "@app/common/appConfig"
 import { UserRegistry } from "@app/registry"
-import { IPFShareLog } from "@app/sharelog.js"
+import { IPFShareLog } from "@app/shareLog.js"
 import { IPFSNodeManager } from "@ipfs/IPFSNodeManager.js"
 import { DID } from "dids"
 import type { Controller, ControllerType } from "ipfsd-ctl"

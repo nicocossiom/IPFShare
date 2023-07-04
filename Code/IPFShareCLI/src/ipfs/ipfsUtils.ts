@@ -1,4 +1,5 @@
 import { ctx } from "@app/index.js"
+import { logger } from "@common/logger.js"
 import archiver from "archiver"
 import { Presets, SingleBar } from "cli-progress"
 import crypto, { createDecipheriv } from "crypto"
@@ -224,12 +225,11 @@ export async function decryptTarballAndReadEntries(encryptedStream: NodeJS.Reada
         entries.push(entry.path)
     })
 
-
     // Wait for the 'end' event to ensure all entries have been processed
     new Promise<void>(
         (resolve) => {
             parse.on("end", () => {
-                console.log("Parse finished")
+                logger.debug("Parse finished")
                 resolve()
             })
         }

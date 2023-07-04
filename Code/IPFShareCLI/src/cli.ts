@@ -76,24 +76,6 @@ type CommandOptions<T extends Command<unknown[], OptionValues>> = T extends Comm
 type CommandArguments<T extends Command<unknown[], OptionValues>> = T extends Command<infer A, OptionValues> ? A : never;
 export type DaemonCommandOptions = CommandOptions<typeof daemonCommand>;
 
-program.command("get")
-    .summary("Download a file or folder")
-    .description("Downloads a file or folder from IPFS. The file or folder is decrypted and downloaded from IPFS.")
-    .argument("[cids...]", "CID of file or folder to download")
-    .action(async (cids: string[]) => { 
-    // if empty cid array
-        if (!cids || cids.length === 0) {
-            program.help()
-        }
-        await withContext(async () => {
-            for (const strCid of cids) {
-                const cid = CID.parse(strCid)
-                const bufferMap = await getEnctrypedObject(cid)
-                console.log(bufferMap)
-            }
-        })
-    })
-
 program.command("cat")
     .summary("Print the contents of a given CID")
     .description("Prints the contents of a given CID. The CID must be an encrypted jwt.")

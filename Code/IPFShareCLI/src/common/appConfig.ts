@@ -56,7 +56,7 @@ export async function getAppConfigAndPromptIfUsernameInvalid(daemon = false) {
                     console.log("Username already exists")
                     return false
                 }
-                console.log(`Username ${username} is valid`)
+                console.log(`Username ${username} is not in the registry ✅`)
                 return true
             }
             const username = await usernamePrompt(validateFn)

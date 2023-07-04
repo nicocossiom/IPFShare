@@ -3,7 +3,7 @@ import { ctx } from "@app/index.js"
 import { IPFSNodeManager } from "@app/ipfs/IPFSNodeManager.js"
 import { getOrbitDB } from "@app/orbitdb/orbitdb.js"
 import { UserRegistry } from "@app/registry.js"
-import { IPFShareLog } from "@app/sharelog.js"
+import { IPFShareLog } from "@app/shareLog.js"
 import { getAppConfigAndPromptIfUsernameInvalid } from "@common/appConfig.js"
 import { logger } from "@common/logger.js"
 import { spawn } from "child_process"
@@ -73,7 +73,7 @@ function sendMessageToOrbitDBService(message: string): Promise<string> {
         ctx.daemonSocket.once("data", data => {
             // Handle any response or acknowledgment from the daemon process
             const response = data.toString()
-            console.log(`Received response for message ${message}:`, response)
+            logger.debug(`Received response for message ${message}:`, response)
             resolve(response)
         })
 
@@ -82,7 +82,7 @@ function sendMessageToOrbitDBService(message: string): Promise<string> {
                 console.error("Error sending message:", error.message)
                 reject(error)
             }
-            console.log(`Sent message ${message}`)
+            logger.debug(`Sent message ${message}`)
         })
     })
 }

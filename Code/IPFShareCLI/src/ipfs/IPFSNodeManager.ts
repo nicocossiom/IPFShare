@@ -3,17 +3,16 @@ import { isPortInUse } from "@app/common/utils.js"
 import { ctx } from "@app/index.js"
 import { getOrbitDB } from "@app/orbitdb/orbitdb.js"
 import { UserRegistry } from "@app/registry.js"
-import { IPFShareLog } from "@app/sharelog.js"
+import { IPFShareLog } from "@app/shareLog.js"
 import { getAppConfigAndPromptIfUsernameInvalid } from "@common/appConfig.js"
 import { logger } from "@common/logger.js"
 import { newNodeConfig } from "@ipfs/ipfsNodeConfigs.js"
 import fs from "fs"
 import * as goIPFSModule from "go-ipfs"
-import * as ipfsModule from "ipfs"
-import { IPFS } from "ipfs"
 import type { ControllerType, Factory, IPFSOptions } from "ipfsd-ctl"
 import * as Ctl from "ipfsd-ctl"
 import * as KuboRPCModule from "kubo-rpc-client"
+import { IPFS } from "kubo-rpc-client/dist/src/types"
 import net from "node:net"
 import path from "node:path"
 import psList from "ps-list"
@@ -82,13 +81,6 @@ class IPFSNodeManager {
         return ipfs
     }
 
-    public async createIPFSNode(): Promise<IPFS> {
-        return await ipfsModule.create(this.nodes.length > 0 ? this.newConfig().config: this.currentConfig ).then((node: IPFS) => {
-            this.nodes.push(node)
-            logger.debug("Node created, current number of nodes: ", this.nodes.length)
-            return node
-        })
-    }
 
     private async createFactory() {
         
@@ -100,13 +92,8 @@ class IPFSNodeManager {
                 remote: false,
                 kuboRpcModule: KuboRPCModule,
                 // ipfsHttpModule: ipfsHTTpModule,
-                ipfsModule: ipfsModule, // only if you gonna spawn 'proc' controllers
             },
             {
-                // overrides per type
-                js: {
-                    ipfsBin: ipfsModule.path(),
-                },
                 go: {
                     ipfsBin: goIPFSModule.path(),
                 },
@@ -182,7 +169,6 @@ class IPFSNodeManager {
                 logger.error("Error launching daemon", err) 
                 process.exit(1)
             })
-        logger.debug(`Daemon stdio: ${daemon.subprocess?.stdout} ${daemon.subprocess?.stderr}`)
         daemon.subprocess?.stdout?.pipe(process.stdout)
         daemon.subprocess?.stderr?.pipe(process.stderr)
         daemon.subprocess?.setMaxListeners(Infinity)
