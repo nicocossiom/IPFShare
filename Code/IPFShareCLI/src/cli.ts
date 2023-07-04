@@ -8,10 +8,9 @@ import chalk from "chalk"
 import figlet from "figlet"
 import fs from "fs"
 import { CID } from "kubo-rpc-client"
+import prompts from "prompts"
 import { decryptTarballAndReadEntries } from "./ipfs/ipfsUtils.js"
 chalk.level = 3
-
-
 const logo = figlet.textSync("IPFShare", { font: "Georgia11", horizontalLayout: "default", verticalLayout: "default" })
 
 const program = new Command()
@@ -133,34 +132,69 @@ program.command("ls")
         await withContext(async () => {
             for (const strCid of cids) {
                 const cid = CID.parse(strCid)
-                const {contentCID, iv, key, recipientDIDs} = await getEnctrypedObject(cid)
-                console.log(`Content CID: ${contentCID.toString()}`)
-                console.log(`IV: ${iv.toString("base64")}`)
-                console.log(`Key: ${key.toString("base64")}`)
+                const {contentCID, iv, key} = await getEnctrypedObject(cid)
                 const contentRes = await downloadFromIpfs(contentCID)
-                console.log(`Downloaded content: ${contentRes}`)
                 await decryptTarballAndReadEntries(contentRes, key, iv)
             }
         })
     })
-        
+
+
+
+const interactiveRegistryPrompt:  (promptMessage: string)  => Promise<string[]> = async (promptMessage) => {
+    const users =  (await ctx.registry?.searchUsers(() => true))
+    if (!users) throw new Error("No users found")
+    const choices = users.filter(user => ctx.appConfig?.user.peerId !== user.peerId)
+        .map((user) => {
+            const res: prompts.Choice = {
+                title: `${user.username} - ${user.orbitdbIdentity} - peerId: ${user.peerId}`,
+                value: user.orbitdbIdentity,
+            }
+            return res
+        })
+    // using prompts package with autocompleteMultiselect
+    const response = await prompts.prompt({
+        type: "autocompleteMultiselect",
+        name: "recipients",
+        message: promptMessage,
+        choices: choices,
+        min: 0,
+        max: users.length,
+        hint: "- Space to de/select. Return to submit"
+    })
+
+    if (response.recipients) {
+        return response.recipients
+    } else {
+        throw new Error("No recipients selected")
+    }
+}
+
 program.command("share")
     .argument("[path...]", "Path to file or folder to upload")
     .action(async (paths) => {
-    // if empty path array
+        // if empty path array
         if (!paths || paths.length === 0) {
             program.help()
         }
         await withContext(async () => {
             if (!ctx.did) throw new Error("DID not initialized")
+            
             const { encryptedStream, iv, key } = await createEncryptedTarFromPaths(paths)
             const res = await uploadToIpfs(encryptedStream)
-            const share: Share = { contentCID: res.cid, iv: iv, key: key, recipientDIDs: [ctx.did.id] }
+            // let doneSelectingRecipients = false
+            const recipients: string[] = await interactiveRegistryPrompt("Select recipients")
+            recipients.push(ctx.appConfig!.user.orbitdbIdentity)
+            console.log(`Recipient DIDs ${recipients}`)
+            const share: Share = { contentCID: res.cid, iv: iv, key: key, recipientDIDs: recipients}
             const shareCID = await addEncryptedObject(share)
+            const shareHash = await ctx.shareLog?.addShare({ message: "prueba", recipients: recipients, shareCID: shareCID }) 
+            console.log(`Added share to ShareLog with hash: ${shareHash}`)
             console.log(`Content CID: ${res.cid.toString()}`)
             console.log(`Share CID: ${shareCID.toString()}`)
+            // const ipnsRes = await createIPNSLink(shareCID, "prueba")
+            // console.log(`IPNS Link: ${ipnsRes.name}, ${ipnsRes.value}`)
         })
-
     })
 
 program.command("download")
@@ -185,7 +219,15 @@ program.command("download")
         await withContext(async () => {
             for (const strCid of cids) {
                 const cid = CID.parse(strCid)
-                const {contentCID, iv, key, recipientDIDs} = await getEnctrypedObject(cid)
+                // }catch(e){
+                // cid = await ctx.ipfs?.api.resolve("/ipns/" + strCid)
+                // if (!cid) throw new Error("The provided CID is neither a valid CID nor a valid IPNS link")
+                // console.log(`Resolved IPNS link to ${cid}`)
+                // cid = cid.split("/ipfs/")[1]
+                // if (!cid) throw new Error("The provided CID is neither a valid CID nor a valid IPNS link")
+                // cid = CID.parse(cid)
+                // }
+                const {contentCID, iv, key} = await getEnctrypedObject(cid)
                 console.log(`Content CID: ${contentCID.toString()}`)
                 console.log(`IV: ${Buffer.from(iv).toString("hex")}`)
                 console.log(`Key: ${Buffer.from(key).toString("hex")}`)
@@ -211,6 +253,14 @@ const registryUpdateCommand = new Command("update")
 
 const registryDeleteCommand = new Command("delete")
     .summary("Delete your IPFShare account")
+    .description("Deletes the entry in the registry associated with your account. \
+    This means that other users will not be able to share files with you as your DID information is not available.")
+    .action(async () => { 
+        await withContext(async () => {
+            if(!ctx.appConfig) throw new Error("AppConfig not initialized")
+            await ctx.registry?.deleteUser(ctx.appConfig.user.orbitdbIdentity)
+        })
+    })
 
 const registryListCommand = new Command("list")
     .summary("List all users in the IPFShare global registry")
@@ -221,13 +271,78 @@ const registryListCommand = new Command("list")
         })
     })
 
+const registrySearchCommand = new Command("search")
+    .summary("Search for a user in the IPFShare global registry")
+    .description("Search for a user in the IPFShare global registry by username, orbitDB identity or peerId")
+    // add three optionas for username, orbitdb identity and peerId, each recieves an argument
+    .addOption(new Option("-i, --interactive", "Downloads the registry and shows an interactive prompt to search for a user"))
+    .addOption(new Option("-u, --username <username>", "Search by username"))
+    .addOption(new Option("-o, --orbitdb <orbitdbIdentity>", "Search by orbitdb identity"))
+    .addOption(new Option("-p, --peerId <peerId>", "Search by peerId"))
+    .action(async(options) => {
+        await withContext(async () => {
+            if (options.interactive) {
+                await interactiveRegistryPrompt("Search for a user by username, orbitdb identity or peerId")
+                return
+            }
+            console.log(await ctx.registry?.searchUsers(
+                (user) => {
+                    return user.username === options.username
+                        || user.orbitdbIdentity === options.orbitdb
+                        || user.peerId === options.peerId
+
+                }))
+        })
+    })
+
+const shareLogListCommand = new Command("list")
+    .summary("List all shares in the global share log")
+    .action(async () => {
+        await withContext(async () => {
+            ctx.shareLog?.store.iterator({ limit: -1 }).collect().forEach((entry) => {
+                console.log(entry.payload.value)
+            })
+        })
+    })
+const shareLogCommand = program.command("sharelog")
+    .summary("Interact with the global share log")
+    .addCommand(shareLogListCommand)
+
+const sharedComomand = program.command("shared")
+    .summary("List all files and folders shared with you")
+    .description("List all files and folders shared with you by other users. You can select ")
+
+
+const sharesListComomand = new Command("list")
+    .summary("List all files and folders that you are sharing with other users")
+    .description("Lists all names of shares identified by their share name which is an key associated to IPNS links")
+    .action(async () => { 
+        await withContext(async () => { 
+            const keys = await ctx.ipfs?.api.key.list()
+            const shares = keys?.filter((key) => key.name !== "self")
+            console.log(shares)
+        })
+    })
+
+
+const sharesCommand = program.command("shares")
+    .summary("Interact with shares created by you")
+    .description("Interact with shares created by you. You can create, list, update and delete shares.")
+    .addCommand(sharesListComomand)
+    .action(async (opts, command) => { 
+        if(command.args.length === 0) { 
+            command.help()
+            return
+        }
+    })
+
 const registryRegisterCommand = new Command("register")
     .summary("Register yourself in IPFShare global registry")
     .description("This is done automatically when using the application, if this IPFShare\
      instance does not have a 'username' field in the config file the application will prompt you to register.")
     .action(async () => {
         await withContext(async () => {
-            await ctx.registry?.addUser({orbitdbIdentity: "fake", peerId: "fake", username: "fake"})
+            console.log("Registering user")
         })
     })
 
@@ -238,6 +353,7 @@ const registruCommand = program.command("registry")
     .addCommand(registryDeleteCommand)
     .addCommand(registryListCommand)
     .addCommand(registryRegisterCommand)
+    .addCommand(registrySearchCommand)
     .action(async (opts, command) => {
         if (command.args.length === 0) {
             command.help()
@@ -256,6 +372,7 @@ program.command("info")
                 console.log(`DID: ${ctx.identity?.toJSON().id}}`)
                 console.log(`PeerID: ${ctx.ipfs?.peer.id}`)
                 console.log(`OrbitDB identity: ${ctx.orbitdb?.id}`)
+                console.log(`Registry Address: ${ctx.registry?.store.address.toString()}`)
             })
     })
        

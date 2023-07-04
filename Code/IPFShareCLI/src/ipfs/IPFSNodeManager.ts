@@ -3,7 +3,8 @@ import { isPortInUse } from "@app/common/utils.js"
 import { ctx } from "@app/index.js"
 import { getOrbitDB } from "@app/orbitdb/orbitdb.js"
 import { UserRegistry } from "@app/registry.js"
-import { getAppConfig } from "@common/appConfig.js"
+import { IPFShareLog } from "@app/sharelog.js"
+import { getAppConfigAndPromptIfUsernameInvalid } from "@common/appConfig.js"
 import { logger } from "@common/logger.js"
 import { newNodeConfig } from "@ipfs/ipfsNodeConfigs.js"
 import fs from "fs"
@@ -155,6 +156,8 @@ class IPFSNodeManager {
                         await ctx.registry.open()
                         logger.info("Replicating registry")
                         await ctx.registry.replicate()
+                        ctx.shareLog = new IPFShareLog(ctx.ipfs.api, ctx.orbitdb, "ipfs-sharelog")
+                        await ctx.shareLog.open()
                     })()
                 }
             })
@@ -189,9 +192,11 @@ class IPFSNodeManager {
         ctx.orbitdb = await getOrbitDB(true)
         ctx.registry = new UserRegistry(ctx.ipfs.api, ctx.orbitdb)
         logger.info("Replicating registry")
-        await ctx.registry.replicate()
         await ctx.registry.open()
-        ctx.appConfig = await getAppConfig(true)
+        await ctx.registry.replicate()
+        ctx.shareLog = new IPFShareLog(ctx.ipfs.api, ctx.orbitdb, "ipfs-sharelog")
+        await ctx.shareLog.open()
+        ctx.appConfig = await getAppConfigAndPromptIfUsernameInvalid(true)
         process.on("SIGINT", () => {
             (async () => {
                 logger.info("Killing daemon")

@@ -3,7 +3,7 @@ import archiver from "archiver"
 import { Presets, SingleBar } from "cli-progress"
 import crypto, { createDecipheriv } from "crypto"
 import { CID } from "kubo-rpc-client"
-import { AddResult } from "kubo-rpc-client/dist/src/types"
+import { AddResult, NameAPI } from "kubo-rpc-client/dist/src/types"
 import fsp from "node:fs/promises"
 import path from "path"
 import { PassThrough, Readable } from "stream"
@@ -52,6 +52,18 @@ export async function uploadToIpfs(stream: PassThrough): Promise<AddResult> {
     if (!ctx.ipfs) throw new Error("IPFS not initialized")
     const addRes = await ctx.ipfs.api.add(stream, {pin: true})
     return addRes
+}
+
+export type PublishResult = Awaited<ReturnType<NameAPI["publish"]>>
+export async function createIPNSLink(cid: CID, shareName: string ): Promise<PublishResult> {
+    
+    
+    let key = (await ctx.ipfs?.api.key.list())?.filter(k => k.name === shareName)[0]
+    if (!key)
+        key =  await ctx.ipfs?.api.key.gen(shareName)
+    const link = await ctx.ipfs?.api.name.publish(cid, { allowOffline: true, key: key?.name })
+    if(!link) throw new Error("IPNS link creation failed")
+    return link
 }
 
 export async function createEncryptedTarFromPaths(pathsToInclude: string[], tarPath="test.tar.gz") {

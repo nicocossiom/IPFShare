@@ -10,11 +10,8 @@ export const ctx: AppContext = {
     did: undefined,
     daemonSocket: undefined, 
     registry: undefined, 
-    appConfig: undefined
+    appConfig: undefined,
+    shareLog: undefined
 } 
 
-await program.parseAsync(process.argv).catch((e) => {
-    console.error(e)
-    process.exit(1)
-})
-
+await program.parseAsync(process.argv)

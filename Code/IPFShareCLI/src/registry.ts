@@ -11,7 +11,7 @@ import { IdentityProvider } from "orbit-db-identity-provider"
 export interface RegistryEntry {
   peerId: string
   orbitdbIdentity: string // DID
-  username?: string // alias
+  username: string // alias
 }
 
 
@@ -25,9 +25,8 @@ export abstract class Registry<S, DocType> {
     abstract addUser(user: DocType): Promise<void>
     abstract getUser(entryId: string): Promise<DocType | undefined>
     abstract updateUser(entryId: string, updates: Partial<DocType>): Promise<void>
-    abstract searchUsers(queryFn: (doc: DocType) => void): Promise<DocType[]>
-    // Only the owner of the user (the one who created the user) can delete it
-    abstract deleteUser(entryId: string, requesterIdentifier: string): Promise<void>
+    abstract searchUsers(queryFn: (entry: DocType) => boolean): Promise<DocType[]>
+    abstract deleteUser(entryId: string): Promise<void>
 }
 
 
@@ -51,13 +50,14 @@ export class IPFShareRegistryAccessController extends AccessController{
         logger.debug(`User ID: ${userId}`)
         const existingUser = await this._registry.getUser(userId)
 
-        // Only allow appending if the user does not exist or the user is the owner
-        if (!existingUser || existingUser.peerId === entry.identity.id) {
+        // Only allow appending to the log if the user does not exist or the user is the owner
+        if (!existingUser || existingUser.orbitdbIdentity === entry.identity.id) {
+            // Allow access if identity verifies
             return true
         }
-
         return false
     }
+
     static get type(): string {
         return "ipfshare-registry"
     }
@@ -70,7 +70,8 @@ export class IPFShareRegistryAccessController extends AccessController{
         return this._registry.store.address.toString()
     }
 
-    static async create(orbitdb: OrbitDB, options:any): Promise<AccessController> {
+    static async create(orbitdb: OrbitDB, options:{registry: Registry<any, any>}): Promise<AccessController> {
+        // options must contain the registry to be used for access control
         return new IPFShareRegistryAccessController(orbitdb, options.registry)
     }
 }
@@ -91,7 +92,6 @@ export class UserRegistry implements Registry<DocumentStore<RegistryEntry>, Regi
     async open(): Promise<void> {
         // if (this.store != {} as KeyValueStore<IUser>) return
         try {
-            console.log("Opening database")
             this.store = await this.orbitdb.docstore<RegistryEntry>(
                 "ipfshare-registry",
                 {
@@ -105,9 +105,7 @@ export class UserRegistry implements Registry<DocumentStore<RegistryEntry>, Regi
                 }
             )
             await this.store.load()
-            console.log("Opened database with address: ", this.store.address.toString())
         } catch (e) {
-            console.log(`Could not open database, creating it ${e}`)
             await this.create()
         }
     }
@@ -117,50 +115,48 @@ export class UserRegistry implements Registry<DocumentStore<RegistryEntry>, Regi
     }
 
     async create(): Promise<void> {
-        this.store = await this.orbitdb.docstore("ipfshare-registry",
-            {
-                accessController: {
-                    type: IPFShareRegistryAccessController.type,
-                    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                    // @ts-ignore
-                    registry: this,
-                },
-                create: true,
-                indexBy: "orbitdbIdentity", // Specify the field to be used as the index
+        try {
+            
+            this.store = await this.orbitdb.docstore("ipfshare-registry",
+                {
+                    accessController: {
+                        type: IPFShareRegistryAccessController.type,
+                        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                        // @ts-ignore
+                        registry: this,
+                    },
+                    create: true,
+                    indexBy: "orbitdbIdentity", // Specify the field to be used as the index
 
-            })
-        console.log("Created database with address: ", this.store.address.toString())
+                })
+        }catch (e) {
+            logger.error(e)
+        }
     }
 
     async replicate(): Promise<void> {
-        try {
-            await this.store.load()
-            logger.info(`Registry loaded ${this.store.address.toString()}`)
-            this.store.events.on("replicated", (address) => {
-                logger.info(`Registry replicated ${address} `)
-                logger.info(`PeersDB replication status: \n\tprogress:${this.store.replicationStatus.progress}\n\tqueued${this.store.replicationStatus.queued}`)
-            })
-            this.store.events.on("replicate", (address) => {
-                logger.info(`Registry replicate ${address} `)
-                logger.info(`PeersDB replication status: \n\tprogress:${this.store.replicationStatus.progress}\n\tqueued${this.store.replicationStatus.queued}`)
-            })
-            this.store.events.on("peer", (peer) => {
-                (async () => {
-                    await this.store.load()
-                })()
-                logger.info(`Registry peer connected ${peer}`)
-            })
-            this.store.events.on("replicate.progress", (address, hash, entry, progress, have) => {
-                logger.info(`Registry replication progress ${address}, ${hash}, ${entry}, ${progress}, ${have}`)
-            })
-            this.store.events.on("peer.exchanged", (peer, address, heads) => {
-                logger.info(`Registry\n\tpeer ${peer} exchanged, ${heads.toString()}`)
-            } )
-        } catch (error) {
-            logger.error("Could not open OrbitDB registry: no peer in the network has it.")
-            logger.error("Please create a new registry and add it to the network.")
-            logger.error(error)
-        }
+        await this.store.load()
+        logger.info(`Registry loaded ${this.store.address.toString()}`)
+        this.store.events.on("replicated", (address) => {
+            logger.info(`Registry replicated ${address} `)
+            logger.info(`PeersDB replication status: \n\tprogress:${this.store.replicationStatus.progress}\n\tqueued${this.store.replicationStatus.queued}`)
+        })
+        this.store.events.on("replicate", (address) => {
+            logger.info(`Registry replicate ${address} `)
+            logger.info(`PeersDB replication status: \n\tprogress:${this.store.replicationStatus.progress}\n\tqueued${this.store.replicationStatus.queued}`)
+        })
+        this.store.events.on("peer", (peer) => {
+            (async () => {
+                await this.store.load()
+            })()
+            logger.info(`Registry peer connected ${peer}`)
+        })
+        this.store.events.on("replicate.progress", (address, hash, entry, progress, have) => {
+            logger.info(`Registry replication progress ${address}, ${hash}, ${entry}, ${progress}, ${have}`)
+        })
+        this.store.events.on("peer.exchanged", (peer, address, heads) => {
+            logger.info(`Registry\n\tpeer ${peer} exchanged, ${heads.toString()}`)
+        } )
 
     }
 
@@ -187,19 +183,16 @@ export class UserRegistry implements Registry<DocumentStore<RegistryEntry>, Regi
 
     }
 
-    async deleteUser(entryId: string, requesterIdentifier: string): Promise<void> {
+    async deleteUser(entryId: string): Promise<void> {
         const user = await this.getUser(entryId)
         if (!user) {
             throw new Error("User not found")
         }
-  
-        // // Check if the requester is the owner of the user
-        // if (user.owner !== requesterIdentifier) {
-        //     throw new Error("Permission denied: only the owner can delete this user")
-        // }
+        await this.store.del(entryId)
+       
     }
 
-    async searchUsers(mapper: (doc: RegistryEntry) => void): Promise<RegistryEntry[]> {
+    async searchUsers(mapper: (entry: RegistryEntry) => boolean): Promise<RegistryEntry[]> {
         const allUsers = this.store.query(mapper)
         return allUsers
     }

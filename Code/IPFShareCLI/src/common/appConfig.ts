@@ -30,14 +30,25 @@ function createConfig() {
     return config
 }
 
-export async function getAppConfig(daemon = false) {
+export async function getAppConfig(): Promise<undefined | AppConfig> { 
     const configPath = getConfigPath()
-    if (!fs.existsSync(configPath)) {
-        return createConfig()
+    await fs.promises.access(configPath, fs.constants.R_OK,).catch(() => undefined )
+    return JSON.parse(fs.readFileSync(configPath).toString()) as AppConfig
+}
+
+export async function getAppConfigAndPromptIfUsernameInvalid(daemon = false) {
+    let config = await getAppConfig()
+    if (!config) config = await ensureAppConfig()
+    let userInRegistry = false
+    if (config.user.username) {
+        userInRegistry = (await ctx.registry?.getUser(config.user.username)) === undefined
     }
-    const config: AppConfig = JSON.parse(fs.readFileSync(configPath).toString()) as AppConfig
-    if (!config.user.username || config.user.username.length === 0) {
-        console.log("Username is not set")
+    if (
+        config.user.username === undefined
+        || config.user.username.length === 0
+        || !userInRegistry
+    ) {
+        console.log("Username is not set or not registered")
         if (!daemon) {
             const validateFn = async (username: string) => {
                 const userInregistry = await ctx.registry?.getUser(username)
@@ -52,19 +63,22 @@ export async function getAppConfig(daemon = false) {
             console.log(`Setting username to ${username}`)
             config.user.username = username
             await ctx.registry?.addUser(config.user)
-            fs.writeFileSync(configPath, JSON.stringify(config))
+            fs.writeFileSync(getConfigPath(), JSON.stringify(config))
             if (!config.user.username) throw new Error("Username is not set and should have been set")
         } 
     }
-    if (!ctx.registry) throw new Error("Registry is not initialized")
-    const user = await ctx.registry.getUser(config.user.orbitdbIdentity)
-    if (!user) throw new Error("User is not found in the registry")
-    console.log(`Current user: ${JSON.stringify(user, null, 2)})`) 
+    if (!daemon) {
+        if (!ctx.registry) throw new Error("Registry is not initialized")
+        const user = await ctx.registry.getUser(config.user.orbitdbIdentity)
+        if (!user) throw new Error("User is not found in the registry")
+        console.log(`Current user: ${JSON.stringify(user, null, 2)})`) 
+    }
     return config
 }
 
 export async function ensureAppConfig() {
-    const config = await getAppConfig()
+    let config = await getAppConfig()
+    if (!config) config = createConfig()
     let changes = false
     if (!config.user.peerId || config.user.peerId.length === 0) {
         if (!ctx.ipfs) throw new Error("IPFS node is not initialized")

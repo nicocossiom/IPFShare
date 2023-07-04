@@ -3,7 +3,8 @@ import { ctx } from "@app/index.js"
 import { IPFSNodeManager } from "@app/ipfs/IPFSNodeManager.js"
 import { getOrbitDB } from "@app/orbitdb/orbitdb.js"
 import { UserRegistry } from "@app/registry.js"
-import { getAppConfig } from "@common/appConfig.js"
+import { IPFShareLog } from "@app/sharelog.js"
+import { getAppConfigAndPromptIfUsernameInvalid } from "@common/appConfig.js"
 import { logger } from "@common/logger.js"
 import { spawn } from "child_process"
 import { Controller } from "ipfsd-ctl"
@@ -50,11 +51,15 @@ export async function initializeContext() {
         
         ctx.registry = new UserRegistry(ctx.ipfs.api, ctx.orbitdb)
         await ctx.registry.open()
-        ctx.appConfig = await getAppConfig()
+        ctx.shareLog = new IPFShareLog(ctx.ipfs.api, ctx.orbitdb, "ipfs-sharelog")
+        await ctx.shareLog.open()
+        
+        ctx.appConfig = await getAppConfigAndPromptIfUsernameInvalid()
     }
 }
 export async function deInitializeContext() {
     await ctx.registry?.store.close()
+    await ctx.shareLog?.store.close()
     if (!ctx.orbitdb) throw new Error("OrbitDB instance undefined, not closed yet, should not happen")
     ctx.identity?.provider.keystore.close()
     await ctx.orbitdb?.disconnect()
