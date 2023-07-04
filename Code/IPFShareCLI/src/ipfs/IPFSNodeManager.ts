@@ -172,7 +172,6 @@ class IPFSNodeManager {
         daemon.subprocess?.stdout?.pipe(process.stdout)
         daemon.subprocess?.stderr?.pipe(process.stderr)
         daemon.subprocess?.setMaxListeners(Infinity)
-        logger.info(`set max listeners to infinity, current max listeners: ${daemon.subprocess?.getMaxListeners()}`)
         logger.debug(`IPFS Daemon started with pid ${daemon.subprocess?.pid}`)
         ctx.ipfs = daemon
         ctx.orbitdb = await getOrbitDB(true)

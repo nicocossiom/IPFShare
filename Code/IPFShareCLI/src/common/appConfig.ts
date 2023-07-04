@@ -31,9 +31,15 @@ function createConfig() {
 }
 
 export async function getAppConfig(): Promise<undefined | AppConfig> { 
-    const configPath = getConfigPath()
-    await fs.promises.access(configPath, fs.constants.R_OK,).catch(() => undefined )
-    return JSON.parse(fs.readFileSync(configPath).toString()) as AppConfig
+    try {
+        const configPath = getConfigPath()
+        await fs.promises.access(configPath, fs.constants.R_OK,)
+        return JSON.parse(fs.readFileSync(configPath).toString()) as AppConfig
+    }
+    catch (e) {
+        return undefined
+    }
+    
 }
 
 export async function getAppConfigAndPromptIfUsernameInvalid(daemon = false) {
