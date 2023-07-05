@@ -1,10 +1,10 @@
 import { logger } from "@common/logger.js"
+import clipboardy from "clipboardy"
 import { CID } from "kubo-rpc-client/"
 import { IPFS } from "kubo-rpc-client/dist/src/types"
 import notifier from "node-notifier"
 import OrbitDB from "orbit-db"
 import EventStore from "orbit-db-eventstore"
-import clipboardy from "clipboardy"
 export interface ShareLogEntry{
     recipients: string[]
     message: string
@@ -78,7 +78,7 @@ export class ShareLog<T> {
             logger.info(`ShareLog peer connected ${peer}`)
         })
 
-        this.store.events.on("write", async (address, entry, heads) => {
+        this.store.events.on("replicate.progress", async (address, hash, entry, progress, total) => {
             logger.info("Writing new entry to ShareLog: ", entry)
 
             // Check if the entry's recipient field includes the current context's DID
