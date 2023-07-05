@@ -1,0 +1,22 @@
+/// <reference types="node" />
+import { AppConfig } from "../common/appConfig";
+import { UserRegistry } from "../registry";
+import { IPFShareLog } from "../shareLog.js";
+import { IPFSNodeManager } from "../ipfs/IPFSNodeManager.js";
+import { DID } from "dids";
+import type { Controller, ControllerType } from "ipfsd-ctl";
+import { Socket } from "net";
+import OrbitDB from "orbit-db";
+import { Identity } from "orbit-db-identity-provider";
+export interface AppContext {
+    manager: IPFSNodeManager | undefined;
+    orbitdb: OrbitDB | undefined;
+    dbAddress: string | undefined;
+    identity: Identity | undefined;
+    did: DID | undefined;
+    ipfs: Controller<ControllerType> | undefined;
+    daemonSocket: Socket | undefined;
+    registry: UserRegistry | undefined;
+    appConfig: AppConfig | undefined;
+    shareLog: IPFShareLog | undefined;
+}
