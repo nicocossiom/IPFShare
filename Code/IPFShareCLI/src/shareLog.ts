@@ -132,7 +132,9 @@ export class ShareLog<T> {
         this.store.events.on("replicate.progress", async (address, hash, entry, progress, total) => {
             logger.info("Writing new entry to ShareLog: ", entry)
             // Check if the entry's recipient field includes the current context's DID
-            if (entry.payload.value.recipients.includes(this._orbitdb.id) && entry.payload.value.senderId !== this._orbitdb.id) {
+            if (entry.payload.value.recipients.includes(this._orbitdb.id)
+                &&
+                entry.payload.value.senderId !== this._orbitdb.id) {
                 logger.info("Entry matches this node as recipient")
 
                 // Load the local mirror database
@@ -168,6 +170,7 @@ export class IPFShareLog extends ShareLog<ShareLogEntry>{
             await this.create()
         }
     }
+
     async ensureLocalUpToDate() { 
         await this.localSharedWithMeStore.load()
         await this.localSharedWithOthersStore.load()
@@ -175,18 +178,26 @@ export class IPFShareLog extends ShareLog<ShareLogEntry>{
         const localSharedWithMeEntries = this.localSharedWithMeStore.iterator().collect()
         const localSharedWithOtherEntries = this.localSharedWithOthersStore.iterator().collect()
         this.store.iterator().collect().forEach(async (entry) => { 
-            if (entry.payload.value.senderId === this._orbitdb.id) { 
-                if (!localSharedWithOtherEntries.includes(entry)) {
-                    await this.localSharedWithOthersStore.add(entry)
-                }
-            }
-            if (entry.payload.value.recipients.includes(this._orbitdb.id) && entry.payload.value.senderId !== this._orbitdb.id) {
-                if (!localSharedWithMeEntries.includes(entry)) {
-                    await this.localSharedWithMeStore.add(entry.payload.value)
-                    const value: ShareLogEntry = entry.payload.value
-                    logger.info(`New share available, ${value}`)
-                    notify(value)
-                }
+            localSharedWithOtherEntries.forEach(async (localEntry) => {
+                if(localEntry.payload.value.senderId === entry.payload.value.senderId
+                    &&
+                    localEntry.payload.value.shareCID !== entry.payload.value.shareCID
+                )
+                    await this.localSharedWithOthersStore.add(localEntry.payload.value)
+                
+            })
+
+            
+            if (entry.payload.value.recipients.includes(this._orbitdb.id)
+                &&
+                entry.payload.value.senderId !== this._orbitdb.id
+                &&
+                (!localSharedWithMeEntries.includes(entry))
+            ) {
+                await this.localSharedWithMeStore.add(entry.payload.value)
+                const value: ShareLogEntry = entry.payload.value
+                logger.info(`New share available, ${value}`)
+                notify(value)
             }
         })
     }
