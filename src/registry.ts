@@ -135,7 +135,6 @@ export class UserRegistry implements Registry<DocumentStore<RegistryEntry>, Regi
 
     async replicate(): Promise<void> {
         await this.store.load()
-        logger.info(`Registry loaded ${this.store.address.toString()}`)
         this.store.events.on("replicated", (address) => {
             logger.info(`Registry replicated ${address} `)
             logger.info(`Registry replication status: \n\tprogress:${this.store.replicationStatus.progress}\n\tqueued${this.store.replicationStatus.queued}`)

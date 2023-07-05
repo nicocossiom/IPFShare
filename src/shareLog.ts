@@ -113,51 +113,6 @@ export class ShareLog<T> {
         return entry
     }
 
-    async onNewShare(): Promise<void> { 
-        await this.store.load()
-        logger.info(`ShareLog loaded ${this.store.address.toString()}`)
-        this.store.events.on("replicated", (address) => {
-            logger.info(`ShareLog replicated event ${address} `)
-        })
-        this.store.events.on("replicate", (address) => {
-            logger.info(`ShareLog replicate event ${address} `)
-        })
-        this.store.events.on("peer", (peer) => {
-            (async () => {
-                await this.store.load()
-            })()
-            logger.info(`ShareLog peer connected ${peer}`)
-        })
-
-        this.store.events.on("replicate.progress", async (address, hash, entry, progress, total) => {
-            logger.info("Writing new entry to ShareLog: ", entry)
-            // Check if the entry's recipient field includes the current context's DID
-            if (entry.payload.value.recipients.includes(this._orbitdb.id)
-                &&
-                entry.payload.value.senderId !== this._orbitdb.id) {
-                logger.info("Entry matches this node as recipient")
-
-                // Load the local mirror database
-                await this.localSharedWithMeStore.load()
-
-                // Check if the entry already exists in the local mirror database
-                const existingEntry = this.localSharedWithMeStore.iterator().collect().find((localEntry) => localEntry.hash === entry.hash)
-
-                if (existingEntry) {
-                    logger.info("Entry already exists in mirror database: ", existingEntry)
-                } else {
-                    await this.localSharedWithMeStore.add(entry.payload.value)
-                    const value: ShareLogEntry = entry.payload.value
-                    logger.info(`New share available, ${value}`)
-                    notify(value)
-                }
-            }
-        })
-
-        this.store.events.on("peer.exchanged", (peer, address, heads) => {
-            logger.info(`ShareLog peer ${peer} exchanged, ${heads.toString()}`)
-        } )
-    }
 }
 
 export class IPFShareLog extends ShareLog<ShareLogEntry>{
@@ -177,27 +132,30 @@ export class IPFShareLog extends ShareLog<ShareLogEntry>{
         await this.store.load()
         const localSharedWithMeEntries = this.localSharedWithMeStore.iterator().collect()
         const localSharedWithOtherEntries = this.localSharedWithOthersStore.iterator().collect()
-        this.store.iterator().collect().forEach(async (entry) => { 
-            if (entry.payload.value.senderId === this._orbitdb.id &&
-                localSharedWithOtherEntries.filter(async (localEntry) => {
-                    return localEntry.payload.value.shareCID.toString() === entry.payload.value.shareCID.toString()
-                }).length == 0) {
-                await this.localSharedWithOthersStore.add(entry.payload.value)
-            }
-            if (entry.payload.value.recipients.includes(this._orbitdb.id)
-                &&
-                entry.payload.value.senderId !== this._orbitdb.id
-                && 
-                localSharedWithMeEntries.filter(
-                    (localEntry) => localEntry.payload.value.shareCID.toString() === entry.payload.value.shareCID.toString()
-                ).length === 0
-            )  {
-                await this.localSharedWithMeStore.add(entry.payload.value)
-                const value: ShareLogEntry = entry.payload.value
-                logger.info(`New share available, ${JSON.stringify(value)}`)
-                notify(value)
-            }
-        })
+        this.store.iterator().collect().forEach(
+            (entry) => { 
+                (async () => {
+                    if (entry.payload.value.senderId === this._orbitdb.id &&
+                        localSharedWithOtherEntries.filter(async (localEntry) => {
+                            return localEntry.payload.value.shareCID.toString() === entry.payload.value.shareCID.toString()
+                        }).length == 0) {
+                        await this.localSharedWithOthersStore.add(entry.payload.value)
+                    }
+                    if (entry.payload.value.recipients.includes(this._orbitdb.id)
+                        &&
+                        entry.payload.value.senderId !== this._orbitdb.id
+                        &&
+                        localSharedWithMeEntries.filter(
+                            (localEntry) => localEntry.payload.value.shareCID.toString() === entry.payload.value.shareCID.toString()
+                        ).length === 0
+                    ) {
+                        await this.localSharedWithMeStore.add(entry.payload.value)
+                        const value: ShareLogEntry = entry.payload.value
+                        logger.info(`New share available, ${JSON.stringify(value)}`)
+                        notify(value)
+                    }
+                })()
+            })
     }
     
     async create() { 
@@ -218,5 +176,54 @@ export class IPFShareLog extends ShareLog<ShareLogEntry>{
     async close(): Promise<void> {
         await super.close()
         logger.debug(`IPFShareLog closed with address ${this.store.address.root}`)
+    }
+    async onNewShare(): Promise<void> { 
+        await this.store.load()
+        logger.info(`ShareLog loaded ${this.store.address.toString()}`)
+        this.store.events.on("replicated", (address) => {
+            (async () => {await this.ensureLocalUpToDate() })()
+            logger.info(`ShareLog replicated event ${address}`)
+        })
+        this.store.events.on("replicate", (address) => {
+            (async () => {await this.ensureLocalUpToDate() })()
+            logger.info(`ShareLog replicate event ${address} `)
+        })
+        this.store.events.on("peer", (peer) => {
+            (async () => {
+                await this.store.load()
+            })()
+            logger.info(`ShareLog peer connected ${peer}`)
+        })
+
+        this.store.events.on("replicate.progress", (address, hash, entry, progress, total) => {
+            (async () => {
+                logger.info("Writing new entry to ShareLog: ", entry)
+                // Check if the entry's recipient field includes the current context's DID
+                if (entry.payload.value.recipients.includes(this._orbitdb.id)
+                    &&
+                    entry.payload.value.senderId !== this._orbitdb.id) {
+                    logger.info("Entry matches this node as recipient")
+
+                    // Load the local mirror database
+                    await this.localSharedWithMeStore.load()
+
+                    // Check if the entry already exists in the local mirror database
+                    const existingEntry = this.localSharedWithMeStore.iterator().collect().find((localEntry) => localEntry.hash === entry.hash)
+
+                    if (existingEntry) {
+                        logger.info("Entry already exists in mirror database: ", existingEntry)
+                    } else {
+                        await this.localSharedWithMeStore.add(entry.payload.value)
+                        const value: ShareLogEntry = entry.payload.value
+                        logger.info(`New share available, ${value}`)
+                        notify(value)
+                    }
+                }
+            })()
+        })
+
+        this.store.events.on("peer.exchanged", (peer, address, heads) => {
+            logger.info(`ShareLog peer ${peer} exchanged, ${heads.toString()}`)
+        } )
     }
 }
