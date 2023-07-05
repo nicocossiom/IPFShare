@@ -68,6 +68,7 @@ export async function createIPNSLink(cid: CID, shareName: string ): Promise<Publ
 }
 
 export async function createEncryptedTarFromPaths(pathsToInclude: string[], tarPath="test.tar.gz") {
+    
     const progressBarArchive = new SingleBar(
         {
             format: "Archive creation [{bar}] {percentage}% | ETA: {eta}s | {value}/{total}",
@@ -144,13 +145,13 @@ export async function createEncryptedTarFromPaths(pathsToInclude: string[], tarP
         } else if (stat.isFile()) {
             entries += 1
             archive.file(p, { name: path.basename(p) })
-            
         }
-    })
+    }) 
+    const totalSize = 0
 
     progressBarArchive.start(entries, 0)
     await Promise.all(statPromises)
-
+    // Finalize the archive (ie. we are done appending files but streams have to finish yet)
     cipher.on("data", (chunk) => {
         progressBarEncryption.increment(chunk.length)
     })
@@ -165,6 +166,7 @@ export async function createEncryptedTarFromPaths(pathsToInclude: string[], tarP
     
     // Finalize the archive (ie. we are done appending files but streams have to finish yet)
     archive.finalize()
+    
     return { encryptedStream: pass, iv: iv, key: key }
 }
 
@@ -180,16 +182,16 @@ export function decryptAndExtractTarball(encryptedStream: NodeJS.ReadableStream,
         const totalSizeMb = Math.round(totalSize / 1_048_57)
         progressBar.start(totalSizeMb, 0)
 
-        decipher.on("data", (chunk) => {
+        untar.on("data", (chunk) => {
             progressBar.increment(Math.round(chunk.length / 1_048_57))
             progressBar.updateETA()
         })
-        decipher.on("finish", () => {
+        untar.on("finish", () => {
             console.log("Extraction finished")
             progressBar.stop()
             resolve()
         })
-        decipher.on("error", (error) => {
+        untar.on("error", (error) => {
             progressBar.stop()
             reject(error)
         })
