@@ -1,4 +1,4 @@
-/// <reference types="orbit-db/identity" />
+/// <reference types="orbit-db" />
 export interface Key {
     id: string;
     name: string;

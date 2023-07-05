@@ -5,9 +5,6 @@
       "ESNext",
       "DOM",
     ],
-    "types": [
-      "node"
-    ],
     "module": "ESNext",
     "rootDir": "./",
     "moduleResolution": "node",

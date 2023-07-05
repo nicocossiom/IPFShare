@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { program } from "./cli.js";
 export const ctx = {
     manager: undefined,

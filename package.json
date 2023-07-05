@@ -43,10 +43,10 @@
     "prompts": "^2.4.2",
     "ps-list": "^8.1.1",
     "tar": "^6.1.15",
+    "@commander-js/extra-typings": "^11.0.0",
     "winston": "^3.8.2"
   },
   "devDependencies": {
-    "@commander-js/extra-typings": "^11.0.0",
     "@types/archiver": "^5.3.2",
     "@types/cli-progress": "^3.11.0",
     "@types/figlet": "^1.5.6",
