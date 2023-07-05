@@ -183,7 +183,7 @@ export class IPFShareLog extends ShareLog<ShareLogEntry>{
                     &&
                     localEntry.payload.value.shareCID !== entry.payload.value.shareCID
                 )
-                    await this.localSharedWithOthersStore.add(localEntry.payload.value)
+                    await this.localSharedWithOthersStore.add(entry.payload.value)
                 
             })
 
