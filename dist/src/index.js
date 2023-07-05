@@ -1,5 +1,4 @@
 import { program } from "./cli.js";
-import "dotenv/config";
 export const ctx = {
     manager: undefined,
     orbitdb: undefined,
