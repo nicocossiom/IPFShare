@@ -29,11 +29,11 @@ export declare class ShareLog<T> {
     close(): Promise<void>;
     addShare(share: T): Promise<string>;
     getShare(shareLogEntryHash: string): LogEntry<T> | undefined;
-    onNewShare(): Promise<void>;
 }
 export declare class IPFShareLog extends ShareLog<ShareLogEntry> {
     open(): Promise<void>;
     ensureLocalUpToDate(): Promise<void>;
     create(): Promise<void>;
     close(): Promise<void>;
+    onNewShare(): Promise<void>;
 }
