@@ -207,7 +207,8 @@ program.command("share")
                     recipients: recipients,
                     shareCID: shareCID,
                     senderName: ctx.appConfig!.user.username,
-                    recipientNames: recipientNames
+                    recipientNames: recipientNames, 
+                    senderId: ctx.appConfig!.user.orbitdbIdentity
                 }
             ) 
             console.log(`Added share to ShareLog with hash: ${shareHash}`)
@@ -328,7 +329,7 @@ const sharedListCommand = new Command("list")
     .summary("List all shares shared with you")
     .action(async () => { 
         await withContext(async () => { 
-            ctx.shareLog?.localStore.iterator({ limit: -1 }).collect().forEach((entry) => {
+            ctx.shareLog?.localSharedWithMeStore.iterator({ limit: -1 }).collect().forEach((entry) => {
                 console.log(entry.hash)
                 console.log(entry.payload.value)
             })
@@ -345,9 +346,10 @@ const sharesListComomand = new Command("list")
     .description("Lists all names of shares identified by their share name which is an key associated to IPNS links")
     .action(async () => { 
         await withContext(async () => { 
-            const keys = await ctx.ipfs?.api.key.list()
-            const shares = keys?.filter((key) => key.name !== "self")
-            console.log(shares)
+            ctx.shareLog?.localSharedWithOthersStore.iterator({ limit: -1 }).collect().forEach((entry) => {
+                console.log(entry.hash)
+                console.log(entry.payload.value)
+            })
         })
     })
 

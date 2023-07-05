@@ -11,6 +11,7 @@ export interface ShareLogEntry{
     shareCID: CID
     recipientNames: string[]
     senderName: string
+    senderId: string
 }
 
 function notify(value: ShareLogEntry) {
@@ -31,25 +32,75 @@ export class ShareLog<T> {
     _orbitdb: OrbitDB
     _ipfs: IPFS
     store: EventStore<T>
-    localStore: EventStore<T>
+    localSharedWithMeStore: EventStore<T>
+    localSharedWithMeStoreAdreess: string
+    localSharedWithOthersStore: EventStore<T>
+    localSharedWithOthersStoreAddress: string
+
+    private static openStoreOptions = {
+        accessController:
+            { write: ["*"] },
+        create: false,
+    }
+
+    private static openLocalStoreOptions = {
+        accessController:
+            { write: ["*"] },
+        create: false,
+        localOnly: true
+    }
+    
+    private static createStoreOptions = {
+        accessController: {
+            write: ["*"]
+        }, create: true
+    }
+
+    private static createLocalStoreOptions = {
+        accessController:
+            { write: ["*"] },
+        create: true, 
+        localOnly: true
+    }
+
     constructor(ipfs: IPFS, orbitdb: OrbitDB, storeAddress: string) {
         this._ipfs = ipfs
         this._orbitdb = orbitdb
         this._storeAddress = storeAddress
         this.store = {} as EventStore<T>
-        this.localStore = {} as EventStore<T>
+        this.localSharedWithMeStore = {} as EventStore<T>
+        this.localSharedWithOthersStore = {} as EventStore<T>
+        this.localSharedWithMeStoreAdreess = `${this._storeAddress}${this._orbitdb.id}sharedWithMe`
+        this.localSharedWithOthersStoreAddress = `${this._storeAddress}${this._orbitdb.id}sharedWithOthers`
     }
+
     async open(): Promise<void>{
-        this.store = await this._orbitdb.eventlog<T>(this._storeAddress, { accessController: { write: ["*"] }, create: false })
-        this.localStore = await this._orbitdb.eventlog<T>(`${this._storeAddress}${this._orbitdb.id}`, { accessController: { write: ["*"] }, create: false, localOnly: true})
+        this.store = await this._orbitdb.eventlog<T>(this._storeAddress, ShareLog.openStoreOptions)
+        this.localSharedWithMeStore =
+            await this._orbitdb.eventlog<T>(
+                this.localSharedWithMeStoreAdreess,
+                ShareLog.openLocalStoreOptions
+            )
+        this.localSharedWithOthersStore =
+            await this._orbitdb.eventlog<T>(
+                this.localSharedWithOthersStoreAddress,
+                ShareLog.openLocalStoreOptions
+            )
         await this.store.load()
-        await this.localStore.load()
+        await this.localSharedWithMeStore.load()
+        await this.localSharedWithOthersStore.load()
+        
     }
     async create(): Promise<void> {
-        this.store = await this._orbitdb.eventlog<T>(this._storeAddress, { accessController: { write: ["*"] }, create: true })
-        this.localStore = await this._orbitdb.eventlog<T>(`${this._storeAddress}${this._orbitdb.id}`, { accessController: { write: ["*"] }, create: true, localOnly: true})
+        this.store =
+            await this._orbitdb.eventlog<T>(this._storeAddress, ShareLog.createStoreOptions)
+        this.localSharedWithMeStore =
+            await this._orbitdb.eventlog<T>(this.localSharedWithMeStoreAdreess, ShareLog.createLocalStoreOptions)
+        this.localSharedWithOthersStore =
+            await this._orbitdb.eventlog<T>(this.localSharedWithOthersStoreAddress, ShareLog.createLocalStoreOptions)
         await this.store.load()
-        await this.localStore.load()
+        await this.localSharedWithMeStore.load()
+        await this.localSharedWithOthersStore.load()
     }
     async close(): Promise<void>{
         await this.store?.close()
@@ -80,21 +131,20 @@ export class ShareLog<T> {
 
         this.store.events.on("replicate.progress", async (address, hash, entry, progress, total) => {
             logger.info("Writing new entry to ShareLog: ", entry)
-
             // Check if the entry's recipient field includes the current context's DID
-            if (entry.payload.value.recipients.includes(this._orbitdb.id)) {
+            if (entry.payload.value.recipients.includes(this._orbitdb.id) && entry.payload.value.senderId !== this._orbitdb.id) {
                 logger.info("Entry matches this node as recipient")
 
                 // Load the local mirror database
-                await this.localStore.load()
+                await this.localSharedWithMeStore.load()
 
                 // Check if the entry already exists in the local mirror database
-                const existingEntry = this.localStore.iterator().collect().find((localEntry) => localEntry.hash === entry.hash)
+                const existingEntry = this.localSharedWithMeStore.iterator().collect().find((localEntry) => localEntry.hash === entry.hash)
 
                 if (existingEntry) {
                     logger.info("Entry already exists in mirror database: ", existingEntry)
                 } else {
-                    await this.localStore.add(entry.payload.value)
+                    await this.localSharedWithMeStore.add(entry.payload.value)
                     const value: ShareLogEntry = entry.payload.value
                     logger.info(`New share available, ${value}`)
                     notify(value)
@@ -112,10 +162,35 @@ export class IPFShareLog extends ShareLog<ShareLogEntry>{
     async open() {
         try {
             await super.open()
+            await this.ensureLocalUpToDate()
+
         } catch (err) {
-            return await this.create()
+            await this.create()
         }
     }
+    async ensureLocalUpToDate() { 
+        await this.localSharedWithMeStore.load()
+        await this.localSharedWithOthersStore.load()
+        await this.store.load()
+        const localSharedWithMeEntries = this.localSharedWithMeStore.iterator().collect()
+        const localSharedWithOtherEntries = this.localSharedWithOthersStore.iterator().collect()
+        this.store.iterator().collect().forEach(async (entry) => { 
+            if (entry.payload.value.senderId === this._orbitdb.id) { 
+                if (!localSharedWithOtherEntries.includes(entry)) {
+                    await this.localSharedWithOthersStore.add(entry)
+                }
+            }
+            if (entry.payload.value.recipients.includes(this._orbitdb.id) && entry.payload.value.senderId !== this._orbitdb.id) {
+                if (!localSharedWithMeEntries.includes(entry)) {
+                    await this.localSharedWithMeStore.add(entry.payload.value)
+                    const value: ShareLogEntry = entry.payload.value
+                    logger.info(`New share available, ${value}`)
+                    notify(value)
+                }
+            }
+        })
+    }
+    
     async create() { 
         try {
             await super.create()
@@ -129,6 +204,7 @@ export class IPFShareLog extends ShareLog<ShareLogEntry>{
         this.store.events.on("replicate.progress", (address, hash, entry, progress, have) => { 
             logger.debug(`IPFShareLog replication progress: ${address} ${hash} ${entry} ${progress} ${have}`)
         })
+        await this.ensureLocalUpToDate()
     }
     async close(): Promise<void> {
         await super.close()
