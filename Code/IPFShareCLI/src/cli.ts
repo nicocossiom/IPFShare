@@ -154,6 +154,27 @@ const interactiveRegistryPrompt:  (promptMessage: string)  => Promise<string[]> 
         throw new Error("No recipients selected")
     }
 }
+const raise = (err: string): never => {
+    throw new Error(err)
+}
+
+const messagePrompt: () => Promise<string> = async () => {
+    const response = await prompts.prompt({
+        type: "text",
+        name: "message",
+        message: "Message to send to recipients",
+    })
+    return response.message ?? raise("No message provided")
+}
+
+function getRecipientNames(recipients: string[]): string[] {
+    if (!ctx.registry) throw new Error("Registry not initialized")
+    const users = ctx.registry.store.query((reg) => {
+        return recipients.includes(reg.orbitdbIdentity)
+    })
+    const recipientNames = users.map((user) => user.username)
+    return recipientNames
+}
 
 program.command("share")
     .argument("[path...]", "Path to file or folder to upload")
@@ -177,8 +198,18 @@ program.command("share")
                 key: key.toString("base64"), 
                 recipientDIDs: recipients
             }
+            const msg = await messagePrompt()
+            const recipientNames= getRecipientNames(share.recipientDIDs)
             const shareCID = await addEncryptedObject(share)
-            const shareHash = await ctx.shareLog?.addShare({ message: "prueba", recipients: recipients, shareCID: shareCID }) 
+            const shareHash = await ctx.shareLog?.addShare(
+                {
+                    message: msg,
+                    recipients: recipients,
+                    shareCID: shareCID,
+                    senderName: ctx.appConfig!.user.username,
+                    recipientNames: recipientNames
+                }
+            ) 
             console.log(`Added share to ShareLog with hash: ${shareHash}`)
             console.log(`Content CID: ${res.cid.toString()}`)
             console.log(`Share CID: ${shareCID.toString()}`)
@@ -284,6 +315,7 @@ const shareLogListCommand = new Command("list")
     .action(async () => {
         await withContext(async () => {
             ctx.shareLog?.store.iterator({ limit: -1 }).collect().forEach((entry) => {
+                console.log(entry.hash)
                 console.log(entry.payload.value)
             })
         })
@@ -292,9 +324,20 @@ const shareLogCommand = program.command("sharelog")
     .summary("Interact with the global share log")
     .addCommand(shareLogListCommand)
 
+const sharedListCommand = new Command("list")
+    .summary("List all shares shared with you")
+    .action(async () => { 
+        await withContext(async () => { 
+            ctx.shareLog?.localStore.iterator({ limit: -1 }).collect().forEach((entry) => {
+                console.log(entry.hash)
+                console.log(entry.payload.value)
+            })
+        })
+    })
 const sharedComomand = program.command("shared")
     .summary("List all files and folders shared with you")
     .description("List all files and folders shared with you by other users. You can select ")
+    .addCommand(sharedListCommand)
 
 
 const sharesListComomand = new Command("list")

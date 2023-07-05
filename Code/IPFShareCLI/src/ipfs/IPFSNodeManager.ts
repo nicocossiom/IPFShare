@@ -139,6 +139,7 @@ class IPFSNodeManager {
                         logger.info("Resuming OrbitDB")
                         if (!ctx.ipfs) throw new Error("IPFS is not initialized")
                         ctx.orbitdb = await getOrbitDB(true)
+                        await ctx.identity?.provider.keystore.open()
                         ctx.registry = new UserRegistry(ctx.ipfs.api, ctx.orbitdb)
                         await ctx.registry.open()
                         logger.info("Replicating registry")

@@ -138,11 +138,11 @@ export class UserRegistry implements Registry<DocumentStore<RegistryEntry>, Regi
         logger.info(`Registry loaded ${this.store.address.toString()}`)
         this.store.events.on("replicated", (address) => {
             logger.info(`Registry replicated ${address} `)
-            logger.info(`PeersDB replication status: \n\tprogress:${this.store.replicationStatus.progress}\n\tqueued${this.store.replicationStatus.queued}`)
+            logger.info(`Registry replication status: \n\tprogress:${this.store.replicationStatus.progress}\n\tqueued${this.store.replicationStatus.queued}`)
         })
         this.store.events.on("replicate", (address) => {
             logger.info(`Registry replicate ${address} `)
-            logger.info(`PeersDB replication status: \n\tprogress:${this.store.replicationStatus.progress}\n\tqueued${this.store.replicationStatus.queued}`)
+            logger.info(`Registry replication status: \n\tprogress:${this.store.replicationStatus.progress}\n\tqueued${this.store.replicationStatus.queued}`)
         })
         this.store.events.on("peer", (peer) => {
             (async () => {

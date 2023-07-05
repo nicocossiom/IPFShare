@@ -4,19 +4,25 @@ import { IPFS } from "kubo-rpc-client/dist/src/types"
 import notifier from "node-notifier"
 import OrbitDB from "orbit-db"
 import EventStore from "orbit-db-eventstore"
-
+import clipboardy from "clipboardy"
 export interface ShareLogEntry{
     recipients: string[]
     message: string
     shareCID: CID
+    recipientNames: string[]
+    senderName: string
 }
 
-function notify() {
+function notify(value: ShareLogEntry) {
     notifier.notify({
-        title: "New IPFShare Available",
-        message: "A new IPFShare is available",
+        title: `IPFShare: ${value.senderName} shared something with you`,
+        message: "A new IPFShare is available: click to copy the link to your clipboard",
+        open: value.shareCID.toString(),
         sound: true,
-        wait: false
+        wait: false,
+    })
+    notifier.on("click", async (notifierObject, options) => {
+        await clipboardy.write(value.shareCID.toString())
     })
 }
 
@@ -72,25 +78,26 @@ export class ShareLog<T> {
             logger.info(`ShareLog peer connected ${peer}`)
         })
 
-        this.store.events.on("replicate.progress", async (address, hash, entry, progress, have) => {
-            logger.info("Received a new entry from a peer")
+        this.store.events.on("write", async (address, entry, heads) => {
+            logger.info("Writing new entry to ShareLog: ", entry)
 
             // Check if the entry's recipient field includes the current context's DID
             if (entry.payload.value.recipients.includes(this._orbitdb.id)) {
-                logger.info("Entry with recipient matching current DID found: ", entry)
+                logger.info("Entry matches this node as recipient")
 
                 // Load the local mirror database
                 await this.localStore.load()
 
                 // Check if the entry already exists in the local mirror database
-                const existingEntry = this.localStore.get(entry.hash)
+                const existingEntry = this.localStore.iterator().collect().find((localEntry) => localEntry.hash === entry.hash)
 
                 if (existingEntry) {
                     logger.info("Entry already exists in mirror database: ", existingEntry)
                 } else {
                     await this.localStore.add(entry.payload.value)
-                    logger.info(`New share available, CID: ${entry.payload.value.shareCID}, message: ${entry.payload.value.message}`)
-                    notify()
+                    const value: ShareLogEntry = entry.payload.value
+                    logger.info(`New share available, ${value}`)
+                    notify(value)
                 }
             }
         })
