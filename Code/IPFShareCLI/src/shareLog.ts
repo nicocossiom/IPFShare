@@ -186,18 +186,20 @@ export class IPFShareLog extends ShareLog<ShareLogEntry>{
                     await this.localSharedWithOthersStore.add(entry.payload.value)
                 
             })
-
-            
             if (entry.payload.value.recipients.includes(this._orbitdb.id)
                 &&
                 entry.payload.value.senderId !== this._orbitdb.id
-                &&
-                (!localSharedWithMeEntries.includes(entry))
             ) {
-                await this.localSharedWithMeStore.add(entry.payload.value)
-                const value: ShareLogEntry = entry.payload.value
-                logger.info(`New share available, ${value}`)
-                notify(value)
+                if (
+                    localSharedWithMeEntries.filter(
+                        (localEntry) => localEntry.payload.value.shareCID === entry.payload.value.shareCID
+                    ).length == 0
+                ) {
+                    await this.localSharedWithMeStore.add(entry.payload.value)
+                    const value: ShareLogEntry = entry.payload.value
+                    logger.info(`New share available, ${value}`)
+                    notify(value)   
+                }
             }
         })
     }
