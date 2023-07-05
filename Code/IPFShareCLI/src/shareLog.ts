@@ -26,14 +26,14 @@ export class ShareLog<T> {
     }
     async open(): Promise<void>{
         this.store = await this._orbitdb.eventlog<T>(this._storeAddress, { accessController: { write: ["*"] }, create: false })
-        this.localStore = await this._orbitdb.eventlog<T>(this._storeAddress, { accessController: { write: ["*"] }, create: false, localOnly: true})
+        this.localStore = await this._orbitdb.eventlog<T>(`${this._storeAddress}${this._orbitdb.id}`, { accessController: { write: ["*"] }, create: false, localOnly: true})
         await this.store.load()
         await this.localStore.load()
         this.onNewShare()
     }
     async create(): Promise<void> {
         this.store = await this._orbitdb.eventlog<T>(this._storeAddress, { accessController: { write: ["*"] }, create: true })
-        this.localStore = await this._orbitdb.eventlog<T>(this._storeAddress, { accessController: { write: ["*"] }, create: true, localOnly: true})
+        this.localStore = await this._orbitdb.eventlog<T>(`${this._storeAddress}${this._orbitdb.id}`, { accessController: { write: ["*"] }, create: true, localOnly: true})
         await this.store.load()
         await this.localStore.load()
         this.onNewShare()
@@ -64,9 +64,28 @@ export class ShareLog<T> {
             })()
             logger.info(`ShareLog peer connected ${peer}`)
         })
-        this.store.events.on("replicate.progress", (address, hash, entry, progress, have) => {
-            logger.info(`ShareLog replication progress \naddress: ${address.toString()} \nhash: ${hash.toString()}\nentry: ${entry.toString()}\nprogress: ${progress.toString()}\nhave: ${have.toString()}`)
+        this.store.events.on("replicate.progress", async (address, hash, entry, progress, have) => {
+            console.log("Received a new entry from a peer")
+
+            // Check if the entry's recipient field includes the current context's DID
+            if (entry.payload.value.recipients.includes(this._orbitdb.id)) {
+                console.log("Entry with recipient matching current DID found: ", entry)
+
+                // Load the local mirror database
+                await this.localStore.load()
+
+                // Check if the entry already exists in the local mirror database
+                const existingEntry = this.localStore.get(entry.hash)
+
+                if (existingEntry) {
+                    console.log("Entry already exists in mirror database: ", existingEntry)
+                } else {
+                    this.localStore.add(entry.payload.value)
+                    console.log("Entry not found in mirror database")
+                }
+            }
         })
+
         this.store.events.on("peer.exchanged", (peer, address, heads) => {
             logger.info(`ShareLog peer ${peer} exchanged, ${heads.toString()}`)
         } )

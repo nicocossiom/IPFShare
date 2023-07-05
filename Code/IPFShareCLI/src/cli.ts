@@ -209,10 +209,12 @@ program.command("download")
         await withContext(async () => {
             for (const strCid of cids) {
                 const cid = CID.parse(strCid) 
-                const {contentCID, iv, key} = await getEnctrypedObject(cid)
-                console.log(`Content CID: ${contentCID.toString()}`)
-                console.log(`IV: ${iv}`)
-                console.log(`Key: ${key}`)
+                const share = await getEnctrypedObject(cid)
+                console.log(share)
+                const {contentCID, iv, key} = share
+                // console.log(`Content CID: ${contentCID.toString()}`)
+                // console.log(`IV: ${iv}`)
+                // console.log(`Key: ${key}`)
                 const contentRes = await downloadFromIpfs(contentCID)
                 const contentStats = await ctx.ipfs!.api.files.stat("/ipfs/" + contentCID.toString())
                 await decryptAndExtractTarball(contentRes, Buffer.from(key, "base64"), Buffer.from(iv, "base64"), outPath,contentStats.size)
