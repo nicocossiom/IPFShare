@@ -1,6 +1,5 @@
 import { program } from "@app/cli.js"
 import { AppContext } from "@app/types/types.js"
-import "dotenv/config"
 export const ctx: AppContext = {
     manager: undefined,
     orbitdb: undefined,
