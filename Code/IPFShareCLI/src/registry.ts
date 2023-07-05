@@ -14,7 +14,6 @@ export interface RegistryEntry {
   username: string // alias
 }
 
-
 export abstract class Registry<S, DocType> {
     abstract accessController: AccessController
     abstract store: S
@@ -28,8 +27,6 @@ export abstract class Registry<S, DocType> {
     abstract searchUsers(queryFn: (entry: DocType) => boolean): Promise<DocType[]>
     abstract deleteUser(entryId: string): Promise<void>
 }
-
-
 
 export class IPFShareRegistryAccessController extends AccessController{
     

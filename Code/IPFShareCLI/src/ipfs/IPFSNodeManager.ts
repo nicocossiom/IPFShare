@@ -145,6 +145,7 @@ class IPFSNodeManager {
                         await ctx.registry.replicate()
                         ctx.shareLog = new IPFShareLog(ctx.ipfs.api, ctx.orbitdb, "ipfs-sharelog")
                         await ctx.shareLog.open()
+                        await ctx.shareLog.onNewShare()
                     })()
                 }
             })
@@ -181,6 +182,7 @@ class IPFSNodeManager {
         await ctx.registry.replicate()
         ctx.shareLog = new IPFShareLog(ctx.ipfs.api, ctx.orbitdb, "ipfs-sharelog")
         await ctx.shareLog.open()
+        await ctx.shareLog.onNewShare()
         ctx.appConfig = await getAppConfigAndPromptIfUsernameInvalid(true)
         process.on("SIGINT", () => {
             (async () => {

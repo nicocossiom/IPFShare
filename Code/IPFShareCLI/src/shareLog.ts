@@ -49,10 +49,27 @@ export class ShareLog<T> {
         return entry
     }
 
-    onNewShare(): void { 
+    async onNewShare(): Promise<void> { 
+        await this.store.load()
+        logger.info(`ShareLog loaded ${this.store.address.toString()}`)
         this.store.events.on("replicated", (address) => {
-            logger.debug(`ShareLog replicated: ${address}`)
+            logger.info(`ShareLog replicated event ${address} `)
         })
+        this.store.events.on("replicate", (address) => {
+            logger.info(`ShareLog replicate event ${address} `)
+        })
+        this.store.events.on("peer", (peer) => {
+            (async () => {
+                await this.store.load()
+            })()
+            logger.info(`ShareLog peer connected ${peer}`)
+        })
+        this.store.events.on("replicate.progress", (address, hash, entry, progress, have) => {
+            logger.info(`ShareLog replication progress \naddress: ${address.toString()} \nhash: ${hash.toString()}\nentry: ${entry.toString()}\nprogress: ${progress.toString()}\nhave: ${have.toString()}`)
+        })
+        this.store.events.on("peer.exchanged", (peer, address, heads) => {
+            logger.info(`ShareLog peer ${peer} exchanged, ${heads.toString()}`)
+        } )
     }
 }
 
