@@ -14,8 +14,8 @@ import tar from "tar"
 
 export type Share = {
     contentCID: CID,
-    key: Buffer,
-    iv: Buffer,
+    key: string,
+    iv: string,
     recipientDIDs: string[],
 }
 

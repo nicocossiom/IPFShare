@@ -119,7 +119,7 @@ program.command("ls")
                 const cid = CID.parse(strCid)
                 const {contentCID, iv, key} = await getEnctrypedObject(cid)
                 const contentRes = await downloadFromIpfs(contentCID)
-                await decryptTarballAndReadEntries(contentRes, key, iv)
+                await decryptTarballAndReadEntries(contentRes, Buffer.from(key, "utf-8"),  Buffer.from(iv, "utf-8"))
             }
         })
     })
@@ -171,7 +171,12 @@ program.command("share")
             const recipients: string[] = await interactiveRegistryPrompt("Select recipients")
             recipients.push(ctx.appConfig!.user.orbitdbIdentity)
             console.log(`Recipient DIDs ${recipients}`)
-            const share: Share = { contentCID: res.cid, iv: iv, key: key, recipientDIDs: recipients}
+            const share: Share = {
+                contentCID: res.cid, 
+                iv: iv.toString("base64"), 
+                key: key.toString("base64"), 
+                recipientDIDs: recipients
+            }
             const shareCID = await addEncryptedObject(share)
             const shareHash = await ctx.shareLog?.addShare({ message: "prueba", recipients: recipients, shareCID: shareCID }) 
             console.log(`Added share to ShareLog with hash: ${shareHash}`)
@@ -203,22 +208,14 @@ program.command("download")
         fs.mkdirSync(outPath, { recursive: true })
         await withContext(async () => {
             for (const strCid of cids) {
-                const cid = CID.parse(strCid)
-                // }catch(e){
-                // cid = await ctx.ipfs?.api.resolve("/ipns/" + strCid)
-                // if (!cid) throw new Error("The provided CID is neither a valid CID nor a valid IPNS link")
-                // console.log(`Resolved IPNS link to ${cid}`)
-                // cid = cid.split("/ipfs/")[1]
-                // if (!cid) throw new Error("The provided CID is neither a valid CID nor a valid IPNS link")
-                // cid = CID.parse(cid)
-                // }
+                const cid = CID.parse(strCid) 
                 const {contentCID, iv, key} = await getEnctrypedObject(cid)
                 console.log(`Content CID: ${contentCID.toString()}`)
-                console.log(`IV: ${Buffer.from(iv).toString("hex")}`)
-                console.log(`Key: ${Buffer.from(key).toString("hex")}`)
+                console.log(`IV: ${iv}`)
+                console.log(`Key: ${key}`)
                 const contentRes = await downloadFromIpfs(contentCID)
                 const contentStats = await ctx.ipfs!.api.files.stat("/ipfs/" + contentCID.toString())
-                await decryptAndExtractTarball(contentRes, key, iv, outPath,contentStats.size)
+                await decryptAndExtractTarball(contentRes, Buffer.from(key, "base64"), Buffer.from(iv, "base64"), outPath,contentStats.size)
             }
         })
     })
