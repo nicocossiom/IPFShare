@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "An IPFS based encrypted file sharing CLI tool",
   "main": "./dist/src/index.js",
-  "bin": {
+  "bi": {
     "ipfshare": "./dist/src/index.js"
   },
   "type": "module",
