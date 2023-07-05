@@ -178,28 +178,24 @@ export class IPFShareLog extends ShareLog<ShareLogEntry>{
         const localSharedWithMeEntries = this.localSharedWithMeStore.iterator().collect()
         const localSharedWithOtherEntries = this.localSharedWithOthersStore.iterator().collect()
         this.store.iterator().collect().forEach(async (entry) => { 
-            localSharedWithOtherEntries.forEach(async (localEntry) => {
-                if(localEntry.payload.value.senderId === entry.payload.value.senderId
-                    &&
-                    localEntry.payload.value.shareCID !== entry.payload.value.shareCID
-                )
-                    await this.localSharedWithOthersStore.add(entry.payload.value)
-                
-            })
+            if (entry.payload.value.senderId === this._orbitdb.id &&
+                localSharedWithOtherEntries.filter(async (localEntry) => {
+                    return localEntry.payload.value.shareCID.toString() === entry.payload.value.shareCID.toString()
+                }).length == 0) {
+                await this.localSharedWithOthersStore.add(entry.payload.value)
+            }
             if (entry.payload.value.recipients.includes(this._orbitdb.id)
                 &&
                 entry.payload.value.senderId !== this._orbitdb.id
-            ) {
-                if (
-                    localSharedWithMeEntries.filter(
-                        (localEntry) => localEntry.payload.value.shareCID === entry.payload.value.shareCID
-                    ).length == 0
-                ) {
-                    await this.localSharedWithMeStore.add(entry.payload.value)
-                    const value: ShareLogEntry = entry.payload.value
-                    logger.info(`New share available, ${value}`)
-                    notify(value)   
-                }
+                && 
+                localSharedWithMeEntries.filter(
+                    (localEntry) => localEntry.payload.value.shareCID.toString() === entry.payload.value.shareCID.toString()
+                ).length === 0
+            )  {
+                await this.localSharedWithMeStore.add(entry.payload.value)
+                const value: ShareLogEntry = entry.payload.value
+                logger.info(`New share available, ${JSON.stringify(value)}`)
+                notify(value)
             }
         })
     }
