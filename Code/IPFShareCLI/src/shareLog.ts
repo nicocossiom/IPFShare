@@ -1,14 +1,23 @@
 import { logger } from "@common/logger.js"
 import { CID } from "kubo-rpc-client/"
 import { IPFS } from "kubo-rpc-client/dist/src/types"
+import notifier from "node-notifier"
 import OrbitDB from "orbit-db"
 import EventStore from "orbit-db-eventstore"
-
 
 export interface ShareLogEntry{
     recipients: string[]
     message: string
     shareCID: CID
+}
+
+function notify() {
+    notifier.notify({
+        title: "New IPFShare Available",
+        message: "A new IPFShare is available",
+        sound: true,
+        wait: false
+    })
 }
 
 export class ShareLog<T> {
@@ -29,14 +38,12 @@ export class ShareLog<T> {
         this.localStore = await this._orbitdb.eventlog<T>(`${this._storeAddress}${this._orbitdb.id}`, { accessController: { write: ["*"] }, create: false, localOnly: true})
         await this.store.load()
         await this.localStore.load()
-        this.onNewShare()
     }
     async create(): Promise<void> {
         this.store = await this._orbitdb.eventlog<T>(this._storeAddress, { accessController: { write: ["*"] }, create: true })
         this.localStore = await this._orbitdb.eventlog<T>(`${this._storeAddress}${this._orbitdb.id}`, { accessController: { write: ["*"] }, create: true, localOnly: true})
         await this.store.load()
         await this.localStore.load()
-        this.onNewShare()
     }
     async close(): Promise<void>{
         await this.store?.close()
@@ -64,12 +71,13 @@ export class ShareLog<T> {
             })()
             logger.info(`ShareLog peer connected ${peer}`)
         })
+
         this.store.events.on("replicate.progress", async (address, hash, entry, progress, have) => {
-            console.log("Received a new entry from a peer")
+            logger.info("Received a new entry from a peer")
 
             // Check if the entry's recipient field includes the current context's DID
             if (entry.payload.value.recipients.includes(this._orbitdb.id)) {
-                console.log("Entry with recipient matching current DID found: ", entry)
+                logger.info("Entry with recipient matching current DID found: ", entry)
 
                 // Load the local mirror database
                 await this.localStore.load()
@@ -78,10 +86,11 @@ export class ShareLog<T> {
                 const existingEntry = this.localStore.get(entry.hash)
 
                 if (existingEntry) {
-                    console.log("Entry already exists in mirror database: ", existingEntry)
+                    logger.info("Entry already exists in mirror database: ", existingEntry)
                 } else {
-                    this.localStore.add(entry.payload.value)
-                    console.log("Entry not found in mirror database")
+                    await this.localStore.add(entry.payload.value)
+                    logger.info(`New share available, CID: ${entry.payload.value.shareCID}, message: ${entry.payload.value.message}`)
+                    notify()
                 }
             }
         })

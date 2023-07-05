@@ -44,14 +44,16 @@ export class IPFShareRegistryAccessController extends AccessController{
         if (!userId) {
             throw new Error("Username is not set")
         }
-        logger.debug(`User ID: ${userId}`)
+        logger.debug(`Registry: ${userId} is trying to append`)
         const existingUser = await this._registry.getUser(userId)
 
         // Only allow appending to the log if the user does not exist or the user is the owner
         if (!existingUser || existingUser.orbitdbIdentity === entry.identity.id) {
+            logger.debug(`Registry: ${userId} authorized to append`)
             // Allow access if identity verifies
             return true
         }
+        logger.debug(`Registry: ${userId} NOT authorized to append`)
         return false
     }
 
